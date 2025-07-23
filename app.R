@@ -8,31 +8,12 @@ rm(list = ls()) # App depends on globals, so clear everything beforehand
 ONLINE_SYSTEM <<- T
 BUCKET_NAME <<- "wb-smarttrans-police-pilot-test"
 VERSION_NUMBER <<- "1.15"
-if(BUCKET_NAME %in% "wb-smarttrans-police-pilot-test"){
-  TESTING_CAPTION <- "TEST SYSTEM"
-  SYSTEM_SHORT_NAME <- " TEST"
-  TEST_SYSTEM_TF <- T
-} else if (BUCKET_NAME %in% "wb-smarttrans-police-pilot"){
-  TESTING_CAPTION <- ""
-  SYSTEM_SHORT_NAME <- ""
-  TEST_SYSTEM_TF <- F
-} else if (BUCKET_NAME %in% "wb-smarttrans-police-pilot-dd"){
-  TESTING_CAPTION <- "DOUBLE DATA ENTRY"
-  SYSTEM_SHORT_NAME <- " DDE"
-  TEST_SYSTEM_TF <- T
-}
+
+TESTING_CAPTION <- "TEST SYSTEM"
+SYSTEM_SHORT_NAME <- " TEST"
+TEST_SYSTEM_TF <- T
 
 ALLOWED_IP_ADDRESSES <- ""
-# ALLOWED_IP_ADDRESSES <- c(
-#   "10.190.87.12",
-#   "197.211.20.81",
-#   "69.138.79.100",
-#   "197.211.20.81",
-#   "154.78.109.54",
-#   "102.167.248.131",
-#   "105.162.2.70",
-#   "196.216.94.206"
-# )
 
 source(file.path("modules_main", "setup.R"))
 source(file.path("modules_main", "functions.R"))

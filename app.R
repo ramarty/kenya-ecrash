@@ -698,7 +698,7 @@ server = (function(input, output, session) {
           output$passwordwarning_ui <- renderText({
             
             if(INCORRECT_PASSWORD){
-              out <- HTML("<h3><span style='color:red'>Incorrect Username or Password</span></h3>")
+              out <- HTML("<h4><span style='color:red'>Incorrect Username or Password</span></h4>")
             } else{
               out <- ""
             }

@@ -1,0 +1,103 @@
+\documentclass{article}
+\usepackage[top=2in, bottom=.5in, left=1in, right=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{tabularx}
+%\usepackage{nopageno}
+
+\begin{document}
+
+\pagestyle{empty}
+
+<<run-all, include=FALSE, echo=F>>=
+
+## Initalize Out
+out = NULL
+
+#### Variable lists
+sr_variables <- c("sr_row1_c1", "sr_row1_c2", "sr_row1_c3", 
+                  "sr_row2", "sr_row3", "sr_row4", "sr_row5", 
+                  "sr_row6_c1", "sr_row6_c2", "sr_row6_c3",
+                  "sr_main_text",
+                  "sr_row7", "sr_row8", "sr_row9", "sr_row10")
+
+ar_variables <- c("ar_row1_c1", "ar_row1_c2", "ar_row1_c3", 
+                  "ar_row2", "ar_row3", "ar_row4", "ar_row5", 
+                  "ar_row6_c1", "ar_row6_c2", "ar_row6_c3",
+                  "ar_main_text",
+                  "ar_row7", "ar_row8", "ar_row9", "ar_row10")
+
+fu_variables <- c("fu_row1_c1", "fu_row1_c2", "fu_row1_c3", 
+                  "fu_row2", "fu_row3", "fu_row4", "fu_row5", 
+                  "fu_row6_c1", "fu_row6_c2", "fu_row6_c3",
+                  "fu_main_text",
+                  "fu_row7", "fu_row8", "fu_row9", "fu_row10")
+
+
+# Ensure has all variables
+for(var in c(sr_variables, ar_variables, fu_variables)) if(is.null(data_temp[[var]])) data_temp[[var]] <- NA
+
+data_temp <- data_temp[data_temp$stage %in% "finalized",]
+data_temp <- data_temp[data_temp$report_type %in% c("sit_report", "amendment", "followup"),]
+data_temp <- data_temp[!is.na(data_temp$sr_main_text) | !is.na(data_temp$ar_main_text) | !is.na(data_temp$fu_main_text),]
+
+if(nrow(data_temp) %in% 0){
+  data_temp <- bind_rows(data_temp, data.frame(matrix(nrow = 1, ncol = 0))) 
+  for(var in names(data_temp)) data_temp[[var]] <- ""
+  data_temp$sr_main_text <- "No finalized situation reports to display"
+  data_temp$report_type <- "sit_report"
+} 
+
+N_REPORTS <- nrow(data_temp)
+
+for(n_report_i in 1:N_REPORTS){
+  
+  data_i = data_temp[n_report_i,]
+  
+  #### Prep data
+  sr_df <- data.frame(matrix(nrow=1,ncol=0))
+  for(var in sr_variables) sr_df[[var]] <- data_i[[var]]
+  
+  ar_df <- data.frame(matrix(nrow=1,ncol=0))
+  for(var in ar_variables) ar_df[[var]] <- data_i[[var]]
+  
+  fu_df <- data.frame(matrix(nrow=1,ncol=0))
+  for(var in fu_variables) fu_df[[var]] <- data_i[[var]]
+  
+  #### Remove blackslash
+  for(var in names(sr_df)) sr_df[[var]] <- str_replace_all(sr_df[[var]], "\\\\", "/") 
+  for(var in names(ar_df)) ar_df[[var]] <- str_replace_all(ar_df[[var]], "\\\\", "/") 
+  for(var in names(fu_df)) fu_df[[var]] <- str_replace_all(fu_df[[var]], "\\\\", "/") 
+
+  #### Add PDFs
+  # Situation Report
+  if(data_i$report_type %in% "sit_report"){ 
+    out = c(out, knit_child('generate_sr_pdf_child.Rnw'))
+  }
+  
+  # Amendment Report (if exists)
+  if(data_i$report_type %in% "amendment"){ 
+    if(!is.null(ar_df$ar_main_text)){
+      if(!is.na(ar_df$ar_main_text)){
+        out = c(out, knit_child('generate_ar_pdf_child.Rnw'))
+      }
+    }
+  }
+  
+    # Amendment Report (if exists)
+  if(data_i$report_type %in% "followup"){ 
+    if(!is.null(fu_df$fu_main_text)){
+      if(!is.na(fu_df$fu_main_text)){
+        out = c(out, knit_child('generate_followup_pdf_child.Rnw'))
+      }
+    }
+  }
+  
+}
+
+@
+
+\Sexpr{paste(out, collapse = '\n')}
+
+\end{document}
+
+

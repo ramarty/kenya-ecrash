@@ -1,0 +1,38 @@
+\documentclass{article}
+\usepackage[top=2in, bottom=.5in, left=1in, right=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{nopageno}
+
+\begin{document}
+
+\pagestyle{empty}
+
+<<run-all, include=FALSE, echo=F>>=
+
+# Initialize out
+out = NULL
+
+# Prep Data
+fu_variables <- c("fu_row1_c1", "fu_row1_c2", "fu_row1_c3", 
+  "fu_row2", "fu_row3", "fu_row4", "fu_row5", 
+  "fu_row6_c1", "fu_row6_c2", "fu_row6_c3",
+  "fu_main_text",
+  "fu_row7", "fu_row8", "fu_row9", "fu_row10")
+
+fu_df <- data.frame(matrix(nrow=1,ncol=0))
+for(var in fu_variables) fu_df[[var]] <- data_i[[var]]
+
+for(var in names(fu_df)){
+  fu_df[[var]] <- str_replace_all(fu_df[[var]], "\\\\", "/") 
+}
+
+out = c(out, knit_child('generate_followup_pdf_child.Rnw'))
+
+@
+
+\Sexpr{paste(out, collapse = '\n')}
+
+\end{document}
+
+

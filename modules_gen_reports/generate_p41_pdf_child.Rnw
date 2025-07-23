@@ -1,0 +1,600 @@
+\begin{tabular}{ll}  % p41 structure begin
+
+% Vertical Table ---------------------------------------------------------------
+\begin{adjustbox}{angle=90, height=9.5in, width=.63in}
+%~~~~~~~~~~~~~~~~~~~~~~~~
+
+\begin{tabular}{l}
+\\
+\\
+\\
+\\
+Tick [ ] where necessary \\
+\end{tabular}
+
+~~~~~~~~~~~~~~~
+
+\begin{tabular}{ll}
+\multicolumn{2}{l}{Class of person} \\
+"PED" & Pedestrian \\
+"CY" & Cyclist  \\
+"MC" & Motor-cycle \\
+"DR" & Driver     \\
+"PS" & Passenger \\ 
+\end{tabular}
+
+~~~~~~~~~~~~~~~
+
+\begin{tabular}{ll}
+\multicolumn{2}{l}{Position in vehicle} \\
+"FS" & Front Seat  \\
+"RS" & Rear seat   \\
+"ST" & Standing (inside) \\
+"OB" & An open body  \\
+\end{tabular}
+
+~~~~~~~~~~~~~~~
+
+\begin{tabular}{llll}
+\multicolumn{4}{l}{Class of vehicles involved} \\
+"S" & Saloon car ~~~ & "MA" & Matatu  \\
+"PU" & Pickup van & "MC" & Motor-cycle   \\
+"LO" & Lorry & "BC" & Bicycle \\
+"LT" & Lorry + trailer & "OT" & Other vehicle  \\
+"BU" & Bus & "PED" & Pedestrian \\
+\end{tabular}
+
+\end{adjustbox}
+
+& 
+
+% Data Table -------------------------------------------------------------------
+\begin{tabular}{l} % data table begin
+\begin{tabular}{ | p{5.6cm} | p{6.5cm} | p{2cm} | p{1.1cm} | p{1.5cm} }
+\multicolumn{5}{c}{Copy "B" - Duplicate to Commandant Traffic Department} \\
+\multicolumn{5}{r}{Police 41} \\
+\hline
+\multicolumn{3}{ | c |}{The Kenya Police - Traffic Department} & \multicolumn{2}{c|}{Acc. Reg. No.} \\
+\multicolumn{3}{| c |}{Accident Report Form} & \multicolumn{2}{c|}{ \textit{\Sexpr{data_i$iar_no}} } \\
+\hline
+Police Division & Police Station & Ch-Reg No. & \multicolumn{2}{c|}{O.B. Num} \\
+\textit{\Sexpr{data_i$police_division}} & 
+\textit{\Sexpr{data_i$police_station}}  & 
+\multicolumn{1}{c|}{\textit{\Sexpr{data_i$ch_reg_no}}}  & 
+\multicolumn{2}{c|}{\textit{\Sexpr{data_i$ob_no}} } \\
+\hline
+Day, date and time of accident & Road Authority & [\textit{\Sexpr{data_i$urban_rural_Urban}}]Urban & \multicolumn{2}{l|}{Speed Limit} \\  
+\textit{\Sexpr{data_i$accident_date} \Sexpr{paste0("   ", data_i$accident_time ) }} & 
+[\textit{\Sexpr{data_i$road_authority_MOTC}}]MOTC  
+[\textit{\Sexpr{data_i$road_authority_Municipality}}]Municipality  
+[\textit{\Sexpr{data_i$road_authority_Other}}]Other & 
+[\textit{\Sexpr{data_i$urban_rural_Rural}}]Rural & 
+\multicolumn{2}{r|}{\textit{\Sexpr{data_i$speed_limit}} kph} \\
+\hline
+\multicolumn{2}{| l |}{Location of Accident (indicate milestone or nearest known place with} & Road No. & \multicolumn{2}{l|}{Total Number of} \\
+\multicolumn{2}{| l |}{distance)} & \textit{\Sexpr{data_i$roadno}} & \multicolumn{2}{l|}{\underline{participants: \textit{\Sexpr{data_i$N_participants}} }} \\
+\multicolumn{2}{| l |}{\textit{\Sexpr{data_i$accident_location}}} & & \multicolumn{2}{l|}{Total Number}   \\
+\multicolumn{2}{| l |}{} & & \multicolumn{2}{l|}{of victims: \textit{\Sexpr{data_i$N_victims}} } \\
+\hline
+\end{tabular}
+\\
+
+\begin{tabular}{| p{5.6cm} | p{1.33cm} | p{4.93cm} | p{1.3cm} | p{3.7cm} |}
+Types of vehicles and other & Register & Name and address of & Nation- & Brief details \\
+participants involved & Number & owner/driver (state which) & ality & of damages \\
+\hline
+\begin{adjustbox}{width=2.3in}
+\begin{tabular}{llllll}
+1 & [\textit{\Sexpr{prtcpnt_df$salooncar[1]}}]SC & 
+    [\textit{\Sexpr{prtcpnt_df$pickupvan[1]}}]PU & 
+    [\textit{\Sexpr{prtcpnt_df$lorry[1]}}]LO & 
+    [\textit{\Sexpr{prtcpnt_df$lorrytrailer[1]}}]LT & 
+    [\textit{\Sexpr{prtcpnt_df$bus[1]}}]BU \\
+   &  
+   [\textit{\Sexpr{prtcpnt_df$matatu[1]}}]MA & 
+   [\textit{\Sexpr{prtcpnt_df$motorcycle[1]}}]MC & 
+   [\textit{\Sexpr{prtcpnt_df$bicycle[1]}}]BC & 
+   [\textit{\Sexpr{prtcpnt_df$othervehicle[1]}}]OT & 
+   [\textit{\Sexpr{prtcpnt_df$pedestrian[1]}}]PED \\
+\end{tabular} 
+\end{adjustbox}
+& 
+
+\textit{\Sexpr{prtcpnt_df$regnumber[1]}} & 
+
+\textit{\Sexpr{prtcpnt_df$name_address_driver[1]}} & 
+\textit{\Sexpr{prtcpnt_df$nationality[1]}} &   
+\footnotesize \textit{\Sexpr{ ifelse(nchar(prtcpnt_df$vehicle_damage[1]) >= 26, 
+                                 paste0(substring(prtcpnt_df$vehicle_damage[1], 1,21), "..."),
+                                 substring(prtcpnt_df$vehicle_damage[1], 1,26))}} \\  
+\hline
+\begin{adjustbox}{width=2.3in}
+\begin{tabular}{llllll}
+2 & [\textit{\Sexpr{prtcpnt_df$salooncar[2]}}]SC & 
+    [\textit{\Sexpr{prtcpnt_df$pickupvan[2]}}]PU & 
+    [\textit{\Sexpr{prtcpnt_df$lorry[2]}}]LO & 
+    [\textit{\Sexpr{prtcpnt_df$lorrytrailer[2]}}]LT & 
+    [\textit{\Sexpr{prtcpnt_df$bus[2]}}]BU \\
+   &  
+   [\textit{\Sexpr{prtcpnt_df$matatu[2]}}]MA & 
+   [\textit{\Sexpr{prtcpnt_df$motorcycle[2]}}]MC & 
+   [\textit{\Sexpr{prtcpnt_df$bicycle[2]}}]BC & 
+   [\textit{\Sexpr{prtcpnt_df$othervehicle[2]}}]OT & 
+   [\textit{\Sexpr{prtcpnt_df$pedestrian[2]}}]PED \\
+\end{tabular} 
+\end{adjustbox} 
+& 
+
+\textit{\Sexpr{prtcpnt_df$regnumber[2]}} & 
+
+\textit{\Sexpr{prtcpnt_df$name_address_driver[2]}} & 
+\textit{\Sexpr{prtcpnt_df$nationality[2]}} &    
+\footnotesize \textit{\Sexpr{ ifelse(nchar(prtcpnt_df$vehicle_damage[2]) >= 26, 
+                                 paste0(substring(prtcpnt_df$vehicle_damage[2], 1,21), "..."),
+                                 substring(prtcpnt_df$vehicle_damage[2], 1,26))}} \\  
+\hline
+\begin{adjustbox}{width=2.3in}
+\begin{tabular}{llllll}
+3 & [\textit{\Sexpr{prtcpnt_df$salooncar[3]}}]SC & 
+    [\textit{\Sexpr{prtcpnt_df$pickupvan[3]}}]PU & 
+    [\textit{\Sexpr{prtcpnt_df$lorry[3]}}]LO & 
+    [\textit{\Sexpr{prtcpnt_df$lorrytrailer[3]}}]LT & 
+    [\textit{\Sexpr{prtcpnt_df$bus[3]}}]BU \\
+   &  
+   [\textit{\Sexpr{prtcpnt_df$matatu[3]}}]MA & 
+   [\textit{\Sexpr{prtcpnt_df$motorcycle[3]}}]MC & 
+   [\textit{\Sexpr{prtcpnt_df$bicycle[3]}}]BC & 
+   [\textit{\Sexpr{prtcpnt_df$othervehicle[3]}}]OT & 
+   [\textit{\Sexpr{prtcpnt_df$pedestrian[3]}}]PED \\
+\end{tabular} 
+\end{adjustbox} 
+& 
+
+\textit{\Sexpr{prtcpnt_df$regnumber[3]}} & 
+
+\textit{\Sexpr{prtcpnt_df$name_address_driver[3]}} & 
+\textit{\Sexpr{prtcpnt_df$nationality[3]}} &    
+\footnotesize \textit{\Sexpr{ ifelse(nchar(prtcpnt_df$vehicle_damage[3]) >= 26, 
+                                 paste0(substring(prtcpnt_df$vehicle_damage[3], 1,21), "..."),
+                                 substring(prtcpnt_df$vehicle_damage[3], 1,26))}} \\  
+\hline
+\multicolumn{5}{|c|}{} \\
+\hline
+\end{tabular}
+
+\\
+
+\begin{tabular}{| p{6.57cm} | p{.3cm} | p{.3cm} | p{.3cm} | p{1.4cm} | p{1.5cm} | p{.5cm} | p{.5cm} | p{1.3cm} | p{1.2cm} |} 
+Name and address of injured person & \multicolumn{3}{c|}{Type of injury} & Veh/part & Class of & Age & Sex & Position & Safety \\
+ 							 &  \multicolumn{1}{c}{Fat} & \multicolumn{1}{c}{Ser} & \multicolumn{1}{c|}{Sli}                          & ref No & \multicolumn{1}{c|}{person} & & & \multicolumn{1}{c|}{in} & belt \\
+						          & \multicolumn{3}{c|}{}                                               &              &            & & & vehicle & in use \\
+\hline
+\textit{\Sexpr{victim_df$name_address[1]}} & 
+\textit{\Sexpr{victim_df$injurytype_Fatal[1]}} & 
+\textit{\Sexpr{victim_df$injurytype_Serious[1]}} & 
+\textit{\Sexpr{victim_df$injurytype_Slight[1]}} & 
+\textit{\Sexpr{victim_df$refnum[1]}} & 
+\textit{\Sexpr{victim_df$personclass[1]}} & 
+\textit{\Sexpr{victim_df$age_years[1]}} & 
+\textit{\Sexpr{victim_df$gender[1]}} & 
+\textit{\Sexpr{victim_df$position[1]}} & 
+\textit{\Sexpr{victim_df$seatbelt[1]}}  \\
+\hline
+\textit{\Sexpr{victim_df$name_address[2]}} & 
+\textit{\Sexpr{victim_df$injurytype_Fatal[2]}} & 
+\textit{\Sexpr{victim_df$injurytype_Serious[2]}} & 
+\textit{\Sexpr{victim_df$injurytype_Slight[2]}} & 
+\textit{\Sexpr{victim_df$refnum[2]}} & 
+\textit{\Sexpr{victim_df$personclass[2]}} & 
+\textit{\Sexpr{victim_df$age_years[2]}} & 
+\textit{\Sexpr{victim_df$gender[2]}} & 
+\textit{\Sexpr{victim_df$position[2]}} & 
+\textit{\Sexpr{victim_df$seatbelt[2]}}  \\
+\hline
+\textit{\Sexpr{victim_df$name_address[3]}} & 
+\textit{\Sexpr{victim_df$injurytype_Fatal[3]}} & 
+\textit{\Sexpr{victim_df$injurytype_Serious[3]}} & 
+\textit{\Sexpr{victim_df$injurytype_Slight[3]}} & 
+\textit{\Sexpr{victim_df$refnum[3]}} & 
+\textit{\Sexpr{victim_df$personclass[3]}} & 
+\textit{\Sexpr{victim_df$age_years[3]}} & 
+\textit{\Sexpr{victim_df$gender[3]}} & 
+\textit{\Sexpr{victim_df$position[3]}} & 
+\textit{\Sexpr{victim_df$seatbelt[3]}}  \\
+\hline
+\textit{\Sexpr{victim_df$name_address[4]}} & 
+\textit{\Sexpr{victim_df$injurytype_Fatal[4]}} & 
+\textit{\Sexpr{victim_df$injurytype_Serious[4]}} & 
+\textit{\Sexpr{victim_df$injurytype_Slight[4]}} & 
+\textit{\Sexpr{victim_df$refnum[4]}} & 
+\textit{\Sexpr{victim_df$personclass[4]}} & 
+\textit{\Sexpr{victim_df$age_years[4]}} & 
+\textit{\Sexpr{victim_df$gender[4]}} & 
+\textit{\Sexpr{victim_df$position[4]}} & 
+\textit{\Sexpr{victim_df$seatbelt[4]}}  \\
+\hline
+\textit{\Sexpr{victim_df$name_address[5]}} & 
+\textit{\Sexpr{victim_df$injurytype_Fatal[5]}} & 
+\textit{\Sexpr{victim_df$injurytype_Serious[5]}} & 
+\textit{\Sexpr{victim_df$injurytype_Slight[5]}} & 
+\textit{\Sexpr{victim_df$refnum[5]}} & 
+\textit{\Sexpr{victim_df$personclass[5]}} & 
+\textit{\Sexpr{victim_df$age_years[5]}} & 
+\textit{\Sexpr{victim_df$gender[5]}} & 
+\textit{\Sexpr{victim_df$position[5]}} & 
+\textit{\Sexpr{victim_df$seatbelt[5]}}  \\
+\hline
+\textit{\Sexpr{victim_df$name_address[6]}} & 
+\textit{\Sexpr{victim_df$injurytype_Fatal[6]}} & 
+\textit{\Sexpr{victim_df$injurytype_Serious[6]}} & 
+\textit{\Sexpr{victim_df$injurytype_Slight[6]}} & 
+\textit{\Sexpr{victim_df$refnum[6]}} & 
+\textit{\Sexpr{victim_df$personclass[6]}} & 
+\textit{\Sexpr{victim_df$age_years[6]}} & 
+\textit{\Sexpr{victim_df$gender[6]}} & 
+\textit{\Sexpr{victim_df$position[6]}} & 
+\textit{\Sexpr{victim_df$seatbelt[6]}}  \\
+\hline
+\textit{\Sexpr{victim_df$name_address[7]}} & 
+\textit{\Sexpr{victim_df$injurytype_Fatal[7]}} & 
+\textit{\Sexpr{victim_df$injurytype_Serious[7]}} & 
+\textit{\Sexpr{victim_df$injurytype_Slight[7]}} & 
+\textit{\Sexpr{victim_df$refnum[7]}} & 
+\textit{\Sexpr{victim_df$personclass[7]}} & 
+\textit{\Sexpr{victim_df$age_years[7]}} & 
+\textit{\Sexpr{victim_df$gender[7]}} & 
+\textit{\Sexpr{victim_df$position[7]}} & 
+\textit{\Sexpr{victim_df$seatbelt[7]}}  \\
+\hline
+\end{tabular}
+
+\\
+
+\begin{tabular}{| p{3.4cm} | p{2.5cm} | p{2.5cm} | p{2.5cm} |}
+Certificate of & \small Vehicle/Particip & \small Vehicle/Particip & \small Vehicle/Particip \\
+competence & \multicolumn{1}{c|}{No. 1} & \multicolumn{1}{c|}{No. 2} & \multicolumn{1}{c|}{No. 3} \\
+\hline
+Driving license No & 
+\textit{\Sexpr{prtcpnt_df$drivinglic[1]}} & 
+\textit{\Sexpr{prtcpnt_df$drivinglic[2]}} & 
+\textit{\Sexpr{prtcpnt_df$drivinglic[3]}} \\
+ & .............. &  ..............  &  ..............  \\
+valid/not valid & 
+\textit{\Sexpr{prtcpnt_df$drivinglic_valid[1]}} & 
+\textit{\Sexpr{prtcpnt_df$drivinglic_valid[2]}} & 
+\textit{\Sexpr{prtcpnt_df$drivinglic_valid[3]}} \\
+\hline
+Road license No & 
+\textit{\Sexpr{prtcpnt_df$roadlic[1]}} & 
+\textit{\Sexpr{prtcpnt_df$roadlic[2]}} & 
+\textit{\Sexpr{prtcpnt_df$roadlic[3]}} \\
+ &  .............. &  .............. &  ..............  \\
+valid/not valid & 
+\textit{\Sexpr{prtcpnt_df$roadlic_valid[1]}} & 
+\textit{\Sexpr{prtcpnt_df$roadlic_valid[2]}} & 
+\textit{\Sexpr{prtcpnt_df$roadlic_valid[3]}} \\
+\hline
+Insurance Company & 
+\textit{\Sexpr{prtcpnt_df$insurance[1]}} & 
+\textit{\Sexpr{prtcpnt_df$insurance[2]}} & 
+\textit{\Sexpr{prtcpnt_df$insurance[3]}} \\
+& & & \\
+\hline
+Ins certificate No & 
+\textit{\Sexpr{prtcpnt_df$inscert[1]}} & 
+\textit{\Sexpr{prtcpnt_df$inscert[2]}} & 
+\textit{\Sexpr{prtcpnt_df$inscert[3]}} \\
+ & ..............& .............. & .............. \\
+valid/not valid & 
+\textit{\Sexpr{prtcpnt_df$inscert_valid[1]}} & 
+\textit{\Sexpr{prtcpnt_df$inscert_valid[2]}} & 
+\textit{\Sexpr{prtcpnt_df$inscert_valid[3]}} \\
+\hline
+P.S.V. licence No & 
+\textit{\Sexpr{prtcpnt_df$psv[1]}} & 
+\textit{\Sexpr{prtcpnt_df$psv[2]}} & 
+\textit{\Sexpr{prtcpnt_df$psv[3]}} \\
+ & .............. & .............. & .............. \\
+valid/not valid & 
+\textit{\Sexpr{prtcpnt_df$psv_valid[1]}} & 
+\textit{\Sexpr{prtcpnt_df$psv_valid[2]}} & 
+\textit{\Sexpr{prtcpnt_df$psv_valid[3]}} \\
+\hline
+\end{tabular}
+
+
+\begin{tabular}{|p{5.75cm}|}
+\multicolumn{1}{|c|}{\small Pedestrian accidents only} \\
+\\
+\hline
+\small If pedestrian was crossing the \\
+\small road he she was: \\
+\small  [\textit{\Sexpr{data_i$ped_crossing_OnCrossing}}]on pedestrian crossing \\
+\small  [\textit{\Sexpr{data_i$ped_crossing_1_25m}}]1-25m from pedestrian crossing \\
+\small  [\textit{\Sexpr{data_i$ped_crossing_over_25m}}]Over 25m \_\_\_\_\_\_ " \_\_\_\_\_\_   \\
+\\
+\small If pedestrian was walking along \\
+\small the road he/she was walking: \\
+\small  [\textit{\Sexpr{data_i$ped_along_inDirOfTraffic}}]in the direction of traffic \\
+\small  [\textit{\Sexpr{data_i$ped_along_towardTraffic}}]towards the traffic \\
+\small Comments about pedestrian movement \\
+\hline
+\footnotesize \textit{\Sexpr{substring(data_i$ped_comments,1,37)}} \\
+\hline
+\footnotesize \textit{\Sexpr{substring(data_i$ped_comments,38,74)}} \\
+\hline
+\footnotesize \textit{\Sexpr{substring(data_i$ped_comments,75,112)}} \\
+\hline
+\end{tabular}
+
+\\
+
+\begin{tabular}{|p{2.3cm} | p{1.55cm} | p{2.5cm} p{2.55cm} p{5.3cm} | p{2.24cm} |}
+\hline
+Road surface & Width of & \multicolumn{3}{c|}{Condition of road at the accident site} & Surface was \\
+\small [\textit{\Sexpr{data_i$road_surface_Tarmac}}]tarmac & 
+surface &  
+\small [\textit{\Sexpr{data_i$road_damaged_yn_damaged}}]damaged & 
+\multicolumn{2}{c|}{If damaged, tick below as appropriate} & 
+\small [\textit{\Sexpr{data_i$surface_wet_dry_Wet}}]wet \\
+\small [\textit{\Sexpr{data_i$road_surface_Murram}}]murram &   
+&  
+\small [\textit{\Sexpr{data_i$road_damaged_yn_notdamaged}}]not damaged & 
+\small [\textit{\Sexpr{data_i$road_damaged_type_potholes}}]potholes 
+& \small [\textit{\Sexpr{data_i$road_damaged_type_damagededges}}]damaged edges 
+& \\
+\small [\textit{\Sexpr{data_i$road_surface_Earth}}]earth & 
+\_\_\textit{\Sexpr{ifelse(is.na(data_i$surface_width), "",data_i$surface_width)}}\_\_\_m & 
+& \small [\textit{\Sexpr{data_i$road_damaged_type_corrugated}}]corrugated & 
+\small [\textit{\Sexpr{data_i$road_damaged_type_loosestones}}]loose stones on the surface & 
+\small [\textit{\Sexpr{data_i$surface_wet_dry_Dry}}]dry \\
+\hline
+\end{tabular}
+
+\\
+
+\begin{tabular}{|p{2.55cm}|}
+Accident site \\
+was \\
+\small [\textit{\Sexpr{data_i$junction_yn_Yes}}]junction \\
+\small [\textit{\Sexpr{data_i$junction_yn_No}}]not junction \\
+\\
+\\
+\end{tabular}
+
+\begin{tabular}{p{5.15cm} |}
+\multicolumn{1}{c|}{Junction accidents only} \\
+\hline
+Junction type was: \\
+\small [\textit{\Sexpr{data_i$junction_type_tjunction}}]T-junction 
+       [\textit{\Sexpr{data_i$junction_type_4leg}}]4-leg junction \\
+\small [\textit{\Sexpr{data_i$junction_type_roundabout}}]roundabout 
+       [\textit{\Sexpr{data_i$junction_type_other}}]other junction \\
+ \\
+ \\
+\end{tabular}
+
+\begin{tabular}{p{6.7cm} | p{2.51cm} |}
+\small Traffic signs and signals at junction & Railway level \\
+\small [\textit{\Sexpr{data_i$junction_signs_signals_giveway}}]give way ~~ 
+       [\textit{\Sexpr{data_i$junction_signs_signals_stop}}]stop ~~ 
+       [\textit{\Sexpr{data_i$junction_signs_signals_nosigns}}]no signs &
+crossing \\
+\small [\textit{\Sexpr{data_i$junction_signs_signals_nolightsignals}}]no traffic light signals & 
+\small [\textit{\Sexpr{data_i$railway_crossing_uncontrolled}}]uncontrolled \\
+If there were traffic light signals, & 
+\small [\textit{\Sexpr{data_i$railway_crossing_controlled}}]controlled \\
+were they: & 
+\small [\textit{\Sexpr{data_i$railway_crossing_none}}]no railway \\
+\small [\textit{\Sexpr{data_i$junction_signals_operating_Operating}}]operating ~~ 
+\small [\textit{\Sexpr{data_i$junction_signals_operating_NotOperating}}]not operating & 
+crossing \\
+\end{tabular}
+
+\\
+
+
+%\textit{\Sexpr{data_i$cause_code_number}}
+\begin{tabular}{|p{1.2cm}  p{1cm} | p{1.5cm} p{1.7cm} | p{1.9cm} p{5.69cm} | p{2.52cm} |}
+\hline
+\multicolumn{2}{|c|}{Road works at the} & 
+\multicolumn{2}{c|}{Weather conditions} & 
+\multicolumn{2}{c|}{Illumination} &  
+\small Apparent police \\
+\multicolumn{2}{|c|}{accident site} & 
+\small [\textit{\Sexpr{data_i$weather_conditions_clear}}]clear & 
+\small [\textit{\Sexpr{data_i$weather_conditions_cloudy}}]cloudy & 
+\small [\textit{\Sexpr{data_i$time_of_day_daylight}}]daylight & 
+\small [\textit{\Sexpr{data_i$time_of_day_nighttime}}]night time 6.45pm - 6.15am &  
+\small cause code No. \\
+\small [\textit{\Sexpr{data_i$road_works_yes}}]yes & 
+\small [\textit{\Sexpr{data_i$road_works_no}}]no & 
+\small [\textit{\Sexpr{data_i$weather_conditions_foggy}}]foggy & 
+\small [\textit{\Sexpr{data_i$weather_conditions_rainy}}]rainy & 
+& 
+\small [\textit{\Sexpr{data_i$street_lights_lightson}}]street lights on & 
+\textit{\Sexpr{data_i$cause_code}} \\
+&
+&	
+&			 
+&  
+& 
+\small [\textit{\Sexpr{data_i$temp}}]no street lights & \\
+\hline
+\multicolumn{6}{| l |}{State who was primarily responsible for the accident} & 
+Alcohol  \\
+\multicolumn{6}{| l |}{\textit{\Sexpr{data_i$primarily_responsible}}} & 
+involved \\
+\multicolumn{6}{|c|}{} & 
+[\textit{\Sexpr{data_i$alcohol_involved_Yes}}]yes 
+[\textit{\Sexpr{data_i$alcohol_involved_No}}]no \\
+\hline
+\end{tabular}
+
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+\\
+
+\end{tabular} % data table end
+\end{tabular} % p41 structure end
+
+\newpage
+
+~~~
+%
+\begin{tabular}{|p{20cm}|}
+\hline
+Name and addresses of witnesses \\
+\textit{\Sexpr{data_i$witness_1_name}\Sexpr{ifelse(data_i$witness_1_address %in% "", "", paste0(", ", data_i$witness_1_address))}} \\
+\textit{\Sexpr{data_i$witness_2_name}\Sexpr{ifelse(data_i$witness_2_address %in% "", "", paste0(", ", data_i$witness_2_address))}} \\
+\textit{\Sexpr{data_i$witness_3_name}\Sexpr{ifelse(data_i$witness_3_address %in% "", "", paste0(", ", data_i$witness_3_address))}} \\
+\textit{\Sexpr{data_i$witness_4_name}\Sexpr{ifelse(data_i$witness_4_address %in% "", "", paste0(", ", data_i$witness_4_address))}} \\
+\textit{\Sexpr{data_i$witness_5_name}\Sexpr{ifelse(data_i$witness_5_address %in% "", "", paste0(", ", data_i$witness_5_address))}} \\
+\hline
+Precis of accident and remarks of the investigating officer \\
+\textit{\Sexpr{data_i$remarks %>% substring(1,109)}} \\
+%\textit{Three cars got into wreck on Mombasa Road. One car was speeding and travelling in the opposite lane and hit the other vehicle. The car was passing other cars in the opposite lane and didn't go back the other lane in time, crashing a vehicle where a 3rd vehicle was also hit. The crash occured near an intersection at night with a few injuries. All those injured were taken to knh in critical condition.}
+\textit{\Sexpr{data_i$remarks %>% substring(110,218)}} \\
+\textit{\Sexpr{data_i$remarks %>% substring(219,327)}} \\
+\textit{\Sexpr{data_i$remarks %>% substring(328,436)}} \\
+\textit{\Sexpr{data_i$remarks %>% substring(437,545)}} \\
+\textit{\Sexpr{data_i$remarks %>% substring(546,654)}} \\
+\textit{\Sexpr{data_i$remarks %>% substring(655,763)}} \\
+\hline
+Draw a sketch plan of the accident site \\
+
+\\\\
+\includegraphics[height=12cm]{\Sexpr{data_i$crash_sketch_image_path}}   
+\\\\
+
+\hline
+\end{tabular}
+
+~~~
+%
+\begin{tabular}{|p{8cm} p{6cm} p{5.15cm}|}
+Additional information on types of vehicles & \multicolumn{2}{c|}{Tick relevant vehicle/participant reference number} \\
+~~ \textit{\Sexpr{prtcpnt_df$countrybus[1]}}[1] 
+   \textit{\Sexpr{prtcpnt_df$countrybus[2]}}[2] 
+   \textit{\Sexpr{prtcpnt_df$countrybus[3]}}[3]country bus & 
+   \textit{\Sexpr{prtcpnt_df$gkbus[1]}}[1] 
+   \textit{\Sexpr{prtcpnt_df$gkbus[2]}}[2] 
+   \textit{\Sexpr{prtcpnt_df$gkbus[3]}}[3]GK bus & 
+   \textit{\Sexpr{prtcpnt_df$taxcab[1]}}[1] 
+   \textit{\Sexpr{prtcpnt_df$taxcab[2]}}[2] 
+   \textit{\Sexpr{prtcpnt_df$taxcab[3]}}[3]taxcab \\
+~~ \textit{\Sexpr{prtcpnt_df$kbs[1]}}[1] 
+   \textit{\Sexpr{prtcpnt_df$kbs[2]}}[2] 
+   \textit{\Sexpr{prtcpnt_df$kbs[3]}}[3]KBS & 
+   \textit{\Sexpr{prtcpnt_df$institutionalbus[1]}}[1]
+   \textit{\Sexpr{prtcpnt_df$institutionalbus[2]}}[2] 
+   \textit{\Sexpr{prtcpnt_df$institutionalbus[3]}}[3]institutional bus & 
+   \textit{\Sexpr{prtcpnt_df$tanker[1]}}[1] 
+   \textit{\Sexpr{prtcpnt_df$tanker[2]}}[2] 
+   \textit{\Sexpr{prtcpnt_df$tanker[3]}}[3]tanker \\
+~~ \textit{\Sexpr{prtcpnt_df$otherurbanbus[1]}}[1] 
+   \textit{\Sexpr{prtcpnt_df$otherurbanbus[2]}}[2] 
+   \textit{\Sexpr{prtcpnt_df$otherurbanbus[3]}}[3]other urban bus & 
+   \textit{\Sexpr{prtcpnt_df$minibus[1]}}[1] 
+   \textit{\Sexpr{prtcpnt_df$minibus[2]}}[2]
+   \textit{\Sexpr{prtcpnt_df$minibus[3]}}[3]mini bus & \\
+& & \\
+
+
+\hline
+\multicolumn{3}{|l|}{Has a notice of intended prosecution been served? ~~~~~~~~~~~~~~~ [\textit{\Sexpr{data_i$intended_prosecution_Yes}}]yes ~~~~~~~~~~~~~~~~~ [\textit{\Sexpr{data_i$intended_prosecution_No}}]no} \\
+& & \\
+\hline
+\end{tabular}
+
+% Dispatched -------------------------------------------------------------------
+~~~
+%
+\begin{tabular}{|p{9.7cm}p{5cm}p{4.45cm}|}
+When a police vehicle is involved this form & Dispatched to & Date \\
+must be dispatched to the Comissioner of Police & ~~ Comissioner of Police & .................... \\
+and the Divisional Transport Officer within 24 hours & ~~ P.P.O | Through & .................... \\
+                                                     & ~~ O.C.P.D | D.T.O. & .................... \\
+\hline
+\end{tabular}
+
+% Officer Information ----------------------------------------------------------
+~~~
+%
+\begin{tabular}{|p{4cm}p{6.5cm}p{4cm}p{4.23cm}|}
+\multicolumn{2}{|l}{Reporting Officer} & \multicolumn{2}{l|}{Officer-in-charge Police Station} \\
+& & & \\
+
+% Date
+Date: \dotuline \Sexpr{data_i$temp} & 
+
+....................... &
+
+
+Date ............... & 
+ ....................... \\
+ & ~~~~~~~  Signature & & ~~~~~~~ Signature \\
+\hline
+\multicolumn{4}{r}{GPX (1,)} \\
+\end{tabular}
+
+

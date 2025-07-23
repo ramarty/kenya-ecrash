@@ -1,0 +1,38 @@
+\documentclass{article}
+\usepackage[top=2in, bottom=.5in, left=1in, right=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{nopageno}
+
+\begin{document}
+
+\pagestyle{empty}
+
+<<run-all, include=FALSE, echo=F>>=
+
+# Initialize out
+out = NULL
+
+# Prep Data
+ar_variables <- c("ar_row1_c1", "ar_row1_c2", "ar_row1_c3", 
+  "ar_row2", "ar_row3", "ar_row4", "ar_row5", 
+  "ar_row6_c1", "ar_row6_c2", "ar_row6_c3",
+  "ar_main_text",
+  "ar_row7", "ar_row8", "ar_row9", "ar_row10")
+
+ar_df <- data.frame(matrix(nrow=1,ncol=0))
+for(var in ar_variables) ar_df[[var]] <- data_i[[var]]
+
+for(var in names(ar_df)){
+  ar_df[[var]] <- str_replace_all(ar_df[[var]], "\\\\", "/") 
+}
+
+out = c(out, knit_child('generate_ar_pdf_child.Rnw'))
+
+@
+
+\Sexpr{paste(out, collapse = '\n')}
+
+\end{document}
+
+

@@ -1,0 +1,55 @@
+\documentclass{article}
+\usepackage[top=2in, bottom=.5in, left=1in, right=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{nopageno}
+
+\begin{document}
+
+\pagestyle{empty}
+
+<<run-all, include=FALSE, echo=F>>=
+
+# Initialize out
+out = NULL
+
+#### Variable lists
+sr_variables <- c("sr_row1_c1", "sr_row1_c2", "sr_row1_c3", 
+  "sr_row2", "sr_row3", "sr_row4", "sr_row5", 
+  "sr_row6_c1", "sr_row6_c2", "sr_row6_c3",
+  "sr_main_text",
+  "sr_row7", "sr_row8", "sr_row9", "sr_row10")
+
+ar_variables <- c("ar_row1_c1", "ar_row1_c2", "ar_row1_c3", 
+  "ar_row2", "ar_row3", "ar_row4", "ar_row5", 
+  "ar_row6_c1", "ar_row6_c2", "ar_row6_c3",
+  "ar_main_text",
+  "ar_row7", "ar_row8", "ar_row9", "ar_row10")
+
+#### Prep data
+sr_df <- data.frame(matrix(nrow=1,ncol=0))
+for(var in sr_variables) sr_df[[var]] <- data_i[[var]]
+
+ar_df <- data.frame(matrix(nrow=1,ncol=0))
+for(var in ar_variables) ar_df[[var]] <- data_i[[var]]
+
+#### Remove blackslash
+for(var in names(sr_df)) sr_df[[var]] <- str_replace_all(sr_df[[var]], "\\\\", "/") 
+for(var in names(ar_df)) ar_df[[var]] <- str_replace_all(ar_df[[var]], "\\\\", "/") 
+
+#### Add PDFs
+out = c(out, knit_child('generate_sr_pdf_child.Rnw'))
+
+if(!is.null(ar_df$ar_main_text)){
+  if(!is.na(ar_df$ar_main_text)){
+    out = c(out, knit_child('generate_ar_pdf_child.Rnw'))
+  }
+}
+
+@
+
+\Sexpr{paste(out, collapse = '\n')}
+
+\end{document}
+
+

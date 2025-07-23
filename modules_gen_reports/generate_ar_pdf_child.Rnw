@@ -1,0 +1,31 @@
+
+\noindent \\
+\begin{tabular}{@{}lcr} % @{} makes tabular not indented
+\Sexpr{ar_df$ar_row1_c1} & ~~~~~~~~~~~~~~~~~~~~~~~ \Sexpr{ar_df$ar_row1_c2} & ~~~~~~~~~~~~~~~~~~ \Sexpr{ar_df$ar_row1_c3} ~ \\
+\end{tabular}
+\\
+\\
+\Sexpr{ar_df$ar_row2}  \\
+\\
+\Sexpr{ar_df$ar_row3} \\
+\\
+\Sexpr{ar_df$ar_row4} \\
+\\
+\Sexpr{ar_df$ar_row5}  \\
+\\
+\begin{tabularx}{\textwidth}{@{}lXr} % @{} makes tabular not indented
+\Sexpr{ar_df$ar_row6_c1} & ~~~~~~~~~~~~~~ \Sexpr{ar_df$ar_row6_c2} & \Sexpr{ar_df$ar_row6_c3} ~~~~~~~~~~ \\
+\end{tabularx}
+\\
+\\
+\Sexpr{ar_df$ar_main_text} \\
+\\
+\Sexpr{ar_df$ar_row7} \\
+\\
+\Sexpr{ar_df$ar_row8} \\
+\\
+\Sexpr{ar_df$ar_row9}  \\
+\\
+\Sexpr{ar_df$ar_row10}  \\
+
+\newpage

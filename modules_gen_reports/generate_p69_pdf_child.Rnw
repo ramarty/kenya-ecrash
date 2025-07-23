@@ -1,0 +1,959 @@
+\documentclass{article}
+\usepackage[top=1in, bottom=.5in, left=.4in, right=.4in]{geometry}
+\usepackage{graphicx}
+\usepackage{tabularx}
+%\usepackage{nopageno}
+\usepackage{multirow}
+\usepackage{ulem}
+%\usepackage{soul}
+
+% for centering column at fixed width
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+
+
+\begin{document}
+
+<<include=FALSE, echo=F>>=
+
+# Load Data --------------------------------------------------------------------
+if(str_squish(input$p69_officer_name) %in% ""){
+  p69_officer_name <- "."
+} else{
+  p69_officer_name <- input$p69_officer_name
+}
+
+#### Load Data
+if(TESTING_SYSTEM){
+  data_temp <- readRDS(file.path("..", "data", "police_data_test.Rds")) %>%
+    arrange(desc(last_updated)) %>%
+    filter(!(uid %in% uids_delete))
+} else{
+  data_temp <- unserialize(aes_cbc_decrypt(readRDS(file.path("..", "data", "police_data.Rds")), key = data_key)) %>%
+    arrange(desc(last_updated)) %>%
+    filter(!(uid %in% uids_delete))
+}
+
+data_temp$crash_uid <- 1:nrow(data_temp)
+
+#data_temp <<- data_temp
+#data_temp <- readRDS("~/Desktop/DELETEME.Rds")
+
+# Fill in Missings -------------------------------------------------------------
+data_temp$cause_code_category[is.na(data_temp$cause_code_category)] <- "Other Cause (97 - 98)"
+data_temp$cause_code_value[is.na(data_temp$cause_code_value)]       <- "98 - Cause not traced"
+
+# Subset Data ------------------------------------------------------------------
+if(!is.null(input$p69_all_or_finalized)){
+  if(input$p69_all_or_finalized %in% "Only Completed Reports"){
+    data_temp <- data_temp[data_temp$stage %in% "finalized",]
+  }
+}
+
+# TODO: For each uid, take latest entry (so could be P41 or amendment)
+data_temp <- data_temp[data_temp$report_type %in% "sit_report",]
+
+if(input$p69_station != "Nairobi County"){
+  data_temp <- data_temp[data_temp$police_division %in% input$p69_station,]
+}
+
+#### Define variables to help subset
+data_temp <- data_temp %>%
+  mutate(accident_year = accident_date %>% year(),
+         accident_month = accident_date %>% 
+           month(label=T, abbr=F) %>%
+           as.character(),
+         accident_quarter = case_when(accident_month %in% c("January", "February", "March")     ~ "January - March",
+                                      accident_month %in% c("April",   "May",      "June")      ~ "April - June",
+                                      accident_month %in% c("July",    "August",   "September") ~ "July - September",
+                                      accident_month %in% c("October", "November", "December")  ~ "October - December"))
+
+#### Restrict by Year
+if(input$summary_date_type %in% c("Annually", "Quarterly", "Monthly")){
+  data_temp <- data_temp[data_temp$accident_year %in% as.numeric(input$summary_year_selection),]
+}
+
+#### Restrict by type
+if (input$summary_date_type %in% "Quarterly"){
+  data_temp <- data_temp[data_temp$accident_quarter %in% input$summary_date_selection,]
+  title_type <- "QUARTERLY ACCIDENT SUMMARY"
+  type_label <- "Quarter ending"
+  type_text_1 <- input$summary_date_selection %>% 
+    str_replace_all(".*-", "") %>% 
+    str_squish() %>%
+    paste0(",")
+  type_text_2 <- input$summary_year_selection
+  
+} else if (input$summary_date_type %in% "Monthly"){
+  data_temp <- data_temp[data_temp$accident_month %in% input$summary_date_selection,]
+  title_type <- "MONTHLY ACCIDENT SUMMARY"
+  type_label <- "Month"
+  type_text_1 <- input$summary_date_selection
+  type_text_2 <- input$summary_year_selection
+  
+} else if (input$summary_date_type %in% "Date Range"){
+  data_temp <- data_temp[(data_temp$accident_date >= min(input$summary_date_selection)) & 
+                           (data_temp$accident_date <= max(input$summary_date_selection)),]
+  title_type <- "ACCIDENT SUMMARY"
+  type_label <- "Date range"
+  type_text_1 <- paste0(min(input$summary_date_selection), " to ", max(input$summary_date_selection))
+  type_text_2 <- ""
+}
+
+if (input$summary_date_type %in% "Annually"){
+  title_type <- "ANNUAL ACCIDENT SUMMARY"
+  type_label <- "Year"
+  type_text_1 <- input$summary_year_selection
+  type_text_2 <- ""
+}
+
+# Prep Variables ---------------------------------------------------------------
+if(is.null(data_temp$cause_code_value)) data_temp$cause_code_value <- NA
+if(is.null(data_temp$N_victims))        data_temp$N_victims <- 0
+if(is.null(data_temp$N_participants))   data_temp$N_participants <- 0
+
+#### Cause Codes
+data_temp <- data_temp %>%
+  
+  ## Specific cause code (eg, 10, 30b, 30c)
+  mutate(cause_code_value = cause_code_value %>% 
+           substring(1,3) %>% 
+           str_replace_all("[[:punct:]]", "") %>% 
+           str_squish()) %>%
+  
+  ## Cause code number (30b --> 30)
+  mutate(cause_code_num = cause_code_value %>%
+           str_replace_all("[[:alpha:]]", "") %>%
+           as.numeric())
+
+# Participant/Victim Dataframes ------------------------------------------------
+# Create dataframe of participants victims
+
+data_figs_list <- prep_data_for_figures(data_temp)
+victim_df <- data_figs_list$victim_df
+participant_df <- data_figs_list$prtcpnt_df
+data_worst_injury <- data_figs_list$dataset
+
+## Make sure has needed variables
+if(is.null(participant_df$vehpart_type)) participant_df$vehpart_type <- NA
+if(is.null(participant_df$injurytype))   participant_df$injurytype <- NA
+
+if(is.null(victim_df$age_years))   victim_df$age_years <- NA
+if(is.null(victim_df$injurytype))  victim_df$injurytype <- NA
+if(is.null(victim_df$personclass)) victim_df$personclass <- NA
+victim_df$injured_yn <- "Yes"
+
+participant_df <- participant_df %>%
+  mutate(age_years = age_years %>% 
+           str_replace_all("[[:alpha:]]|[[:punct:]]", "") %>% 
+           as.numeric())
+
+# Table 1 Data -----------------------------------------------------------------
+#### Cause Codes
+# There is separate question for cause code categories. However, there could
+# be instances where a user chooses the category and not the cause code. To
+# ensure everything adds up, we use the entered cause code to aggregate to 
+# categories
+
+cc_df <- data_temp %>%
+  filter(cause_code_value != "") %>%
+  group_by(cause_code_value) %>%
+  summarise(N = n()) %>%
+  ungroup() 
+
+cc_cat_df <- data_temp %>%
+  filter(cause_code_value != "") %>%
+  mutate(category = case_when(cause_code_num %in% 1:30 ~ "1-30",
+                              cause_code_num %in% 31:58 ~ "31-58",
+                              cause_code_num %in% 59:68 ~ "59-68",
+                              cause_code_num %in% 69:73 ~ "69-73",
+                              cause_code_num %in% 74:75 ~ "74-75",
+                              cause_code_num %in% 76:77 ~ "76-77",
+                              cause_code_num %in% 78:89 ~ "78-89",
+                              cause_code_num %in% 90:93 ~ "90-93",
+                              cause_code_num %in% 94:96 ~ "94-96",
+                              cause_code_num %in% 97:98 ~ "97-98")) %>%
+  group_by(category) %>%
+  summarise(N = n()) %>%
+  mutate(category = category %>% 
+           factor(levels = c("1-30",
+                             "31-58",
+                             "59-68",
+                             "69-73",
+                             "74-75",
+                             "76-77",
+                             "78-89",
+                             "90-93",
+                             "94-96",
+                             "97-98"))) %>%
+  complete(category) %>%
+  mutate(N = N %>% as.character() %>% replace_na("---"))
+
+cc_print <- function(cc){
+  # Function to print cause code. Enter the cause code. If that cause code
+  # wasn't entered (so doesn't exist in the dataframe), return "~~~", which
+  # returns nothing but takes up space so table width doesn't shrink
+  cc <- cc %>% as.character()
+  
+  out <- cc_df$N[cc_df$cause_code_value %in% cc]
+  if(length(out) == 0) out <- "~~~"
+  return(out)
+}
+
+# Age/Injury Dataframe ---------------------------------------------------------
+injured_age_df <- victim_df %>%
+  filter(!is.na(injurytype)) %>%
+  filter(injurytype != "") %>%
+  filter(!is.na(age_years)) %>%
+  mutate(age_over_16 = age_years > 16) %>%
+  group_by(age_over_16, injurytype) %>%
+  summarise(N = n())
+
+inj_age <- function(over_16, type){
+  
+  if(over_16 %in% "all"){
+    N <- sum(injured_age_df$N[(injured_age_df$injurytype %in% type)], na.rm=T)
+  } else{
+    N <- injured_age_df$N[(injured_age_df$age_over_16 %in% over_16) & (injured_age_df$injurytype %in% type)]
+  }
+  
+  if(length(N) == 0) N <- 0
+  
+  return(N)
+}
+
+# Person Class Injured Dataframe -----------------------------------------------
+injured_pclass_df <- victim_df %>%
+  filter(!is.na(injurytype)) %>%
+  filter(injurytype != "") %>%
+  filter(!is.na(personclass)) %>%
+  group_by(personclass, injurytype) %>%
+  summarise(N = n())
+
+inj_pclass <- function(personclass, type){
+  
+  if(type != "all" & personclass == "all"){
+    N <- sum(injured_pclass_df$N[(injured_pclass_df$injurytype %in% type)], na.rm=T)
+  } else if (type == "all" & personclass != "all"){
+    N <- sum(injured_pclass_df$N[(injured_pclass_df$personclass %in% personclass)], na.rm=T)
+  } else if (type != "all" & personclass != "all"){
+    N <- injured_pclass_df$N[(injured_pclass_df$personclass %in% personclass) & (injured_pclass_df$injurytype %in% type)]
+  } else {
+    N <- sum(injured_pclass_df$N, na.rm=T)
+  }
+  
+  if(length(N) == 0) N <- 0
+  
+  return(N)
+}
+
+# Day/Time Dataframe -----------------------------------------------------------
+hour_df <- data_temp %>%
+  filter(!is.na(accident_time_hour)) %>%
+  filter(!is.na(accident_date)) %>%
+  mutate(wday = accident_date %>% as.Date() %>% weekdays(),
+         accident_time_hour = accident_time_hour %>% as.numeric) %>%
+  mutate(day = accident_time_hour %in% 7:19) %>%
+  group_by(day, wday) %>%
+  summarise(N = n())
+
+wday_hr <- function(wday, day){
+  
+  if(wday == "all" & day != "all"){
+    N <- sum(hour_df$N[(hour_df$day %in% day)], na.rm=T)
+  } else if (wday != "all" & day == "all"){
+    N <- sum(hour_df$N[(hour_df$wday %in% wday)], na.rm=T)
+  } else if (wday != "all" & day != "all"){
+    N <- hour_df$N[(hour_df$wday %in% wday) & (hour_df$day %in% day)]
+  } else {
+    N <- sum(hour_df$N, na.rm=T)
+  }
+  
+  if(length(N) == 0) N <- 0
+  
+  return(N)
+}
+
+# Nationality - Responsible ----------------------------------------------------
+# TODO: Right now just taking first participant entered as "responsible"; need to fix this
+# TODO: Do better job of classifying
+
+nationality_df <- participant_df %>%
+  filter(N %in% 1) %>%
+  mutate(nationality = nationality %>% tolower) %>%
+  mutate(nationality = case_when(is.na(nationality) ~ "Not known",
+                                 nationality %in% c("not known", "unknown", ".", "") ~ "Not known",
+                                 nationality %in% "kenyan" ~ "African",
+                                 nationality %in% "european" ~ "European",
+                                 nationality %in% "asian" ~ "Asian",
+                                 TRUE ~ "Others")) %>%
+  group_by(nationality) %>%
+  summarise(N = n())
+
+ntnlty <- function(type){
+  N <- nationality_df$N[nationality_df$nationality %in% type]
+  if(length(N) == 0) N <- "---"
+  return(N)
+}
+
+# Injury / Victim Summary ------------------------------------------------------
+#### Total number of victims of each injury type
+print_victim <- function(type){
+  
+  if(type == "all"){
+    N <- sum(victim_df$injurytype %in% c("Fatal", "Serious", "Slight"), na.rm=T)
+  } else{
+    N <- sum(victim_df$injurytype %in% type, na.rm=T)
+  }
+  
+  if(length(N) == 0) N <- 0
+  return(N)
+}
+
+
+#### Total number of accidents of each injury type - using worst injury type of
+# each crash
+
+# worst_injury_df <- lapply(unique(victim_df$crash_uid), function(i){
+#   persons_df_i <- persons_df[persons_df$crash_uid %in% i,]
+#   
+#   if("Fatal" %in% persons_df_i$injurytype){
+#     out <- "Fatal"
+#   } else if("Serious" %in% persons_df_i$injurytype){
+#     out <- "Serious"
+#   } else if("Slight" %in% persons_df_i$injurytype){
+#     out <- "Slight"
+#   } else{
+#     out <- "Non Injury"
+#   }
+#   
+#   return(out)
+# }) %>%
+#   unlist() %>%
+#   table() %>%
+#   as.data.frame() %>%
+#   dplyr::rename(type = ".",
+#                 N = Freq)
+
+worst_injury_sum_df <- data_worst_injury %>%
+  dplyr::mutate(worst_injury = worst_injury %>% replace_na("Non-Injury")) %>%
+  dplyr::group_by(worst_injury) %>%
+  dplyr::summarise(N = n()) %>%
+  dplyr::rename(type = worst_injury)
+
+print_worst_inj <- function(type){
+  
+  if(type == "all"){
+    N <- sum(worst_injury_sum_df$N[worst_injury_sum_df$type %in% c("Fatal", "Serious", "Slight")], na.rm=T)
+  } else{
+    N <- worst_injury_sum_df$N[worst_injury_sum_df$type %in% type]
+  }
+  
+  if(length(N) == 0) N <- 0
+  return(N)
+}
+
+# Vehicle or Persons Involved --------------------------------------------------
+#### Vehicle Involved
+
+# TODO: Not all categories used. For example, KBS, other urban bus, None/Not Relevant.
+#       need to combine these with another category.
+
+participant_df$vehpart_type[is.na(participant_df$vehpart_type)] <- "Not Known"
+participant_df$vehpart_type[participant_df$vehpart_type %in% c("", "Unknown", "Other Vehicle")] <- "Not Known"
+
+participant_df$vehpart_type[participant_df$vehpart_type %in% c("Pickup van")] <- "Saloon Car" 
+
+# TODO: what is KBS?? where goes?
+participant_df$vehpart_type[participant_df$vehpart_type %in% c("KBS",
+                                                               "GK bus",
+                                                               "mini bus")] <- "Bus" 
+
+
+
+#### Primarily Respondible
+# Also make dataframe name shorter so code in Tex area isn't as messy
+# TODO: Defining primarily involved by first listed. Need to change
+prt_df <- participant_df
+prt_prim_df <- participant_df[participant_df$N %in% 1,]
+
+prt_type <- function(type, df){
+  
+  if(type %in% "all"){
+    N <- nrow(df)
+  } else{
+    N <- sum(df$vehpart_type %in% type, na.rm=T)
+  }
+  
+  if(length(N) == 0) N <- 0
+  return(N)
+}
+
+@
+
+
+% * ------------------------------- *
+% * ------------------------------- *
+%             PAGE 1
+% * ------------------------------- *
+% * ------------------------------- *
+
+\flushright {\bf P.69} \\
+\centering 
+THE KENYA POLICE \\
+\rule{2.5cm}{0.4pt} \\
+{\bf \Sexpr{title_type}} 
+
+\flushleft
+\begin{tabular}{p{10cm} p{10cm} }
+Province/Division/Station \dotuline{~~~\Large{\Sexpr{input$p69_station}} ~~~~~~~~~~~~~~~~~~~~} & 
+\Sexpr{type_label} \dotuline{ ~~ \Large{\Sexpr{type_text_1}} ~~ \Large{\Sexpr{type_text_2}} ~~~~} \\
+\end{tabular}
+
+
+\bigskip
+
+% Table 1 ---------------------------
+\begin{tabular}{c | c | c | c | c | c | c | c | c | c | c| c}
+\hline
+\multicolumn{10}{l|}{\textsc{1. Number of Accidents Under Each Cause Code---}} & \multicolumn{2}{l}{\textsc{Totals}} \\
+
+\hline
+1  \multirow{3}{*}{\LARGE \Sexpr{cc_print(1)}} & 
+13  \multirow{3}{*}{\LARGE \Sexpr{cc_print(13)}} & 
+25  \multirow{3}{*}{\LARGE \Sexpr{cc_print(25)}} &
+33  \multirow{3}{*}{\LARGE \Sexpr{cc_print(33)}} &
+45  \multirow{3}{*}{\LARGE \Sexpr{cc_print(45)}} &
+57  \multirow{3}{*}{\LARGE \Sexpr{cc_print(57)}} &
+68  \multirow{3}{*}{\LARGE \Sexpr{cc_print(68)}} &
+77  \multirow{3}{*}{\LARGE \Sexpr{cc_print(77)}} &
+88  \multirow{3}{*}{\LARGE \Sexpr{cc_print(88)}} &
+97  \multirow{3}{*}{\LARGE \Sexpr{cc_print(97)}} &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "1-30"]}}  \\
+& & & & & & & & & & Drivers &  \\
+& & & & & & & & & & 1-30c & \\
+
+\hline 
+2  \multirow{3}{*}{\LARGE \Sexpr{cc_print(2)}} & 
+14  \multirow{3}{*}{\LARGE \Sexpr{cc_print(14)}} & 
+26  \multirow{3}{*}{\LARGE \Sexpr{cc_print(26)}} &
+34  \multirow{3}{*}{\LARGE \Sexpr{cc_print(34)}} &
+46  \multirow{3}{*}{\LARGE \Sexpr{cc_print(46)}} &
+58  \multirow{3}{*}{\LARGE \Sexpr{cc_print(58)}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "59-68"]}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "76-77"]}} &
+89  \multirow{3}{*}{\LARGE \Sexpr{cc_print(89)}} &
+98  \multirow{3}{*}{\LARGE \Sexpr{cc_print(98)}} &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "31-58"]}}  \\
+& & & & & & & & & & Pedal Cyclists &  \\
+& & & & & & & & & & 31-58 & \\
+
+\hline 
+3  \multirow{3}{*}{\LARGE \Sexpr{cc_print(3)}} & 
+15  \multirow{3}{*}{\LARGE \Sexpr{cc_print(15)}} & 
+27  \multirow{3}{*}{\LARGE \Sexpr{cc_print(27)}} &
+35  \multirow{3}{*}{\LARGE \Sexpr{cc_print(35)}} &
+47  \multirow{3}{*}{\LARGE \Sexpr{cc_print(47)}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "31-58"]}} &
+69  \multirow{3}{*}{\LARGE \Sexpr{cc_print(69)}} &
+78  \multirow{3}{*}{\LARGE \Sexpr{cc_print(78)}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "78-89"]}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "97-98"]}} &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "59-68"]}}  \\
+& & & & & & & & & & Pedestrians &  \\
+& & & & & & & & & & 59-68 & \\
+
+\hline 
+4  \multirow{3}{*}{\LARGE \Sexpr{cc_print(4)}} & 
+16  \multirow{3}{*}{\LARGE \Sexpr{cc_print(16)}} & 
+28  \multirow{3}{*}{\LARGE \Sexpr{cc_print(28)}} &
+36  \multirow{3}{*}{\LARGE \Sexpr{cc_print(36)}} &
+48  \multirow{3}{*}{\LARGE \Sexpr{cc_print(48)}} &
+59  \multirow{3}{*}{\LARGE \Sexpr{cc_print(59)}} &
+70  \multirow{3}{*}{\LARGE \Sexpr{cc_print(70)}} &
+79  \multirow{3}{*}{\LARGE \Sexpr{cc_print(79)}} &
+90  \multirow{3}{*}{\LARGE \Sexpr{cc_print(90)}} &
+\multirow{3}{*}{\LARGE } &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "69-73"]}}  \\
+& & & & & & & & & & Passengers &  \\
+& & & & & & & & & & 69-73 & \\
+
+\hline 
+5  \multirow{3}{*}{\LARGE \Sexpr{cc_print(5)}} & 
+17  \multirow{3}{*}{\LARGE \Sexpr{cc_print(17)}} & 
+29  \multirow{3}{*}{\LARGE \Sexpr{cc_print(29)}} &
+37  \multirow{3}{*}{\LARGE \Sexpr{cc_print(37)}} &
+49  \multirow{3}{*}{\LARGE \Sexpr{cc_print(49)}} &
+60  \multirow{3}{*}{\LARGE \Sexpr{cc_print(60)}} &
+71  \multirow{3}{*}{\LARGE \Sexpr{cc_print(71)}} &
+80  \multirow{3}{*}{\LARGE \Sexpr{cc_print(80)}} &
+91  \multirow{3}{*}{\LARGE \Sexpr{cc_print(91)}} &
+\multirow{3}{*}{\LARGE } &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "74-75"]}}  \\
+& & & & & & & & & & Animals &  \\
+& & & & & & & & & & 74-75 & \\
+
+\hline 
+6  \multirow{3}{*}{\LARGE \Sexpr{cc_print(6)}} & 
+18  \multirow{3}{*}{\LARGE \Sexpr{cc_print(18)}} & 
+30  \multirow{3}{*}{\LARGE \Sexpr{cc_print(30)}} &
+38  \multirow{3}{*}{\LARGE \Sexpr{cc_print(38)}} &
+50  \multirow{3}{*}{\LARGE \Sexpr{cc_print(50)}} &
+61  \multirow{3}{*}{\LARGE \Sexpr{cc_print(61)}} &
+72  \multirow{3}{*}{\LARGE \Sexpr{cc_print(72)}} &
+81  \multirow{3}{*}{\LARGE \Sexpr{cc_print(81)}} &
+92  \multirow{3}{*}{\LARGE \Sexpr{cc_print(92)}} &
+\multirow{3}{*}{\LARGE } &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "76-77"]}}  \\
+& & & & & & & & & & Obstruction &  \\
+& & & & & & & & & & 76-77 & \\
+
+\hline 
+7  \multirow{3}{*}{\LARGE \Sexpr{cc_print(7)}} & 
+19  \multirow{3}{*}{\LARGE \Sexpr{cc_print(19)}} & 
+30a  \multirow{3}{*}{\LARGE \Sexpr{cc_print("30a")}} &
+39  \multirow{3}{*}{\LARGE \Sexpr{cc_print(39)}} &
+51  \multirow{3}{*}{\LARGE \Sexpr{cc_print(51)}} &
+62  \multirow{3}{*}{\LARGE \Sexpr{cc_print(62)}} &
+73  \multirow{3}{*}{\LARGE \Sexpr{cc_print(73)}} &
+82  \multirow{3}{*}{\LARGE \Sexpr{cc_print(82)}} &
+93  \multirow{3}{*}{\LARGE \Sexpr{cc_print(93)}} &
+\multirow{3}{*}{\LARGE } &
+Vehicle & \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "78-89"]}}  \\
+& & & & & & & & & & Defects &  \\
+& & & & & & & & & & 78-89 & \\
+
+\hline 
+8  \multirow{3}{*}{\LARGE \Sexpr{cc_print(8)}} & 
+20  \multirow{3}{*}{\LARGE \Sexpr{cc_print(20)}} & 
+30b  \multirow{3}{*}{\LARGE \Sexpr{cc_print("30b")}} &
+40  \multirow{3}{*}{\LARGE \Sexpr{cc_print(40)}} &
+52  \multirow{3}{*}{\LARGE \Sexpr{cc_print(52)}} &
+63  \multirow{3}{*}{\LARGE \Sexpr{cc_print(63)}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "69-73"]}} &
+83  \multirow{3}{*}{\LARGE \Sexpr{cc_print(83)}} &
+\multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "90-93"]}} & See
+\multirow{3}{*}{\LARGE } & 
+Road & \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "90-93"]}}  \\
+& & & & & & & & & Foot- & Defects &  \\
+& & & & & & & & & note & 90-93 & \\
+
+\hline 
+9  \multirow{3}{*}{\LARGE \Sexpr{cc_print(9)}} & 
+21  \multirow{3}{*}{\LARGE \Sexpr{cc_print(21)}} & 
+30c  \multirow{3}{*}{\LARGE \Sexpr{cc_print("30c")}} &
+41  \multirow{3}{*}{\LARGE \Sexpr{cc_print(41)}} &
+53  \multirow{3}{*}{\LARGE \Sexpr{cc_print(53)}} &
+64  \multirow{3}{*}{\LARGE \Sexpr{cc_print(64)}} &
+74  \multirow{3}{*}{\LARGE \Sexpr{cc_print(74)}} &
+84  \multirow{3}{*}{\LARGE \Sexpr{cc_print(84)}} &
+94  \multirow{3}{*}{\LARGE \Sexpr{cc_print(94)}} &
+\multirow{3}{*}{\LARGE } &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "94-96"]}}  \\
+& & & & & & & & & & Weather &  \\
+& & & & & & & & & & 94-96 & \\
+
+\hline 
+10  \multirow{3}{*}{\LARGE \Sexpr{cc_print(10)}} & 
+22  \multirow{3}{*}{\LARGE \Sexpr{cc_print(22)}} & 
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "1-30"]}} &
+42  \multirow{3}{*}{\LARGE \Sexpr{cc_print(42)}} &
+54  \multirow{3}{*}{\LARGE \Sexpr{cc_print(54)}} &
+65  \multirow{3}{*}{\LARGE \Sexpr{cc_print(65)}} &
+75  \multirow{3}{*}{\LARGE \Sexpr{cc_print(75)}} &
+85  \multirow{3}{*}{\LARGE \Sexpr{cc_print(85)}} &
+95  \multirow{3}{*}{\LARGE \Sexpr{cc_print(95)}} &
+\multirow{3}{*}{\LARGE } &
+& \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "97-98"]}}  \\
+& & & & & & & & & & Other Causes &  \\
+& & & & & & & & & & 97-98 & \\
+
+\hline 
+11  \multirow{3}{*}{\LARGE \Sexpr{cc_print(11)}} & 
+23  \multirow{3}{*}{\LARGE \Sexpr{cc_print(23)}} & 
+31  \multirow{3}{*}{\LARGE \Sexpr{cc_print(31)}} &
+43  \multirow{3}{*}{\LARGE \Sexpr{cc_print(43)}} &
+55  \multirow{3}{*}{\LARGE \Sexpr{cc_print(55)}} &
+66  \multirow{3}{*}{\LARGE \Sexpr{cc_print(66)}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "74-75"]}} &
+86  \multirow{3}{*}{\LARGE \Sexpr{cc_print(86)}} &
+96  \multirow{3}{*}{\LARGE \Sexpr{cc_print(96)}} &
+\multirow{3}{*}{\LARGE } &
+& \multirow{3}{*}{\LARGE ~~}  \\
+& & & & & & & & & &  &  \\
+& & & & & & & & & &  & \\
+
+\hline 
+12  \multirow{3}{*}{\LARGE \Sexpr{cc_print(12)}} & 
+24  \multirow{3}{*}{\LARGE \Sexpr{cc_print(24)}} & 
+32  \multirow{3}{*}{\LARGE \Sexpr{cc_print(32)}} &
+44  \multirow{3}{*}{\LARGE \Sexpr{cc_print(44)}} &
+56  \multirow{3}{*}{\LARGE \Sexpr{cc_print(56)}} &
+67  \multirow{3}{*}{\LARGE \Sexpr{cc_print(67)}} &
+76  \multirow{3}{*}{\LARGE \Sexpr{cc_print(76)}} &
+87  \multirow{3}{*}{\LARGE \Sexpr{cc_print(87)}} &
+~~  \multirow{3}{*}{\LARGE \Sexpr{cc_cat_df$N[cc_cat_df$category %in% "94-96"]}} &
+\multirow{3}{*}{\LARGE } &
+& \multirow{3}{*}{\LARGE \Sexpr{sum(cc_df$N)}}  \\
+& & & & & & & & & & Totals &  \\
+& & & & & & & & & &  & \\
+
+
+
+
+\hline
+\end{tabular}
+
+\hangindent=1em
+\textit{Note.}---In all cases where a road defect is the cause of the accident, a copy of form ``Roads 201A'' will be sent to the Roads Engineer, M.O.T. \& C., Nairobi
+\hangafter=1
+
+\bigskip
+
+% Table 2 ---------------------------
+\centering
+\begin{tabular}{l | c | c | c | c}
+\hline
+\multicolumn{5}{l}{\textsc{2. Age Groups of Injured Persons---}} \\
+\hline
+\multicolumn{1}{c|}{Injury} & ~~~~~~~~A--Persons over 16 years~~~~~~~~ & ~\textsc{Total}~ & ~~~~~~~~~Persons up to 16 years~~~~~~~~~ & ~\textsc{Total}~ \\
+\hline
+Fatal ...................... & {\Large \Sexpr{inj_age(T, "Fatal")}} & {\Large \Sexpr{inj_age(T, "Fatal")}} & {\Large \Sexpr{inj_age(F, "Fatal")}} & {\Large \Sexpr{inj_age("all", "Fatal")}} \\
+\cline{2-5}
+Serious ................... & {\Large \Sexpr{inj_age(T, "Serious")}} & {\Large \Sexpr{inj_age(T, "Serious")}} & {\Large \Sexpr{inj_age(F, "Serious")}} & {\Large \Sexpr{inj_age("all", "Serious")}} \\
+\cline{2-5}
+Slight ..................... & {\Large \Sexpr{inj_age(T, "Slight")}} & {\Large \Sexpr{inj_age(T, "Slight")}} & {\Large \Sexpr{inj_age(F, "Slight")}} & {\Large \Sexpr{inj_age("all", "Slight")}} \\
+\cline{2-5}
+&                    &                     &                    &          \\
+\cline{2-5}
+&  &  &  & {\Large \Sexpr{sum(injured_age_df$N)}} \\
+\hline
+\end{tabular}
+
+% * ------------------------------- *
+% * ------------------------------- *
+%             PAGE 2
+% * ------------------------------- *
+% * ------------------------------- *
+\newpage
+
+
+\flushleft
+
+\begin{tabular}{ l l l } % table to put table 3 & 4 in there
+
+% Table 3 ---------------------------------
+\begin{tabular}{l | c | c | c | c}
+\multicolumn{5}{l}{\textsc{3. Class of Person Injured---}} \\
+\hline
+\multicolumn{1}{c|}{Class} & Fatal & Serious & Slight & Total \\
+\hline
+Drivers .................. & {\Large \Sexpr{inj_pclass("Driver", "Fatal")}} & {\Large \Sexpr{inj_pclass("Driver", "Serious")}} & {\Large \Sexpr{inj_pclass("Driver", "Slight")}} & {\Large \Sexpr{inj_pclass("Driver", "all")}} \\
+\cline{2-5}
+Motor Cyclists ...... & {\Large \Sexpr{inj_pclass("Motor-cycle", "Fatal")}} & {\Large \Sexpr{inj_pclass("Motor-cycle", "Serious")}} & {\Large \Sexpr{inj_pclass("Motor-cycle", "Slight")}} & {\Large \Sexpr{inj_pclass("Motor-cycle", "all")}} \\
+\cline{2-5}
+Pedal Cyclists ....... & {\Large \Sexpr{inj_pclass("Cyclist", "Fatal")}} & {\Large \Sexpr{inj_pclass("Cyclist", "Serious")}} & {\Large \Sexpr{inj_pclass("Cyclist", "Slight")}} & {\Large \Sexpr{inj_pclass("Cyclist", "all")}} \\
+\cline{2-5}
+Passengers ............ & {\Large \Sexpr{inj_pclass("Passenger", "Fatal")}} & {\Large \Sexpr{inj_pclass("Passenger", "Serious")}} & {\Large \Sexpr{inj_pclass("Passenger", "Slight")}} & {\Large \Sexpr{inj_pclass("Passenger", "all")}} \\
+\cline{2-5}
+Pedestrians ........... & {\Large \Sexpr{inj_pclass("Pedestrian", "Fatal")}} & {\Large \Sexpr{inj_pclass("Pedestrian", "Serious")}} & {\Large \Sexpr{inj_pclass("Pedestrian", "Slight")}} & {\Large \Sexpr{inj_pclass("Pedestrian", "all")}} \\
+\hline
+\textsc{Totals} & {\Large \Sexpr{inj_pclass("all", "Fatal")}} & {\Large \Sexpr{inj_pclass("all", "Serious")}} & {\Large \Sexpr{inj_pclass("all", "Slight")}} & {\Large \Sexpr{inj_pclass("all", "all")}} \\
+\hline
+
+% Create extra rows so tables 3 and 4 start on same line
+\multicolumn{5}{c}{ ~~ } \\
+\multicolumn{5}{c}{ ~~ } \\
+\multicolumn{5}{c}{ ~~ } \\
+\end{tabular}
+
+
+
+& ~~~~~~~~~~~~ &
+% Table 4 ---------------------------------
+\begin{tabular}{ l |c| c }
+\multicolumn{3}{l}{\textsc{4. Day and Time---}} \\
+\hline
+& \multicolumn{1}{l|}{7 a.m. --} & \multicolumn{1}{l}{7.pm --} \\
+\multicolumn{1}{c|}{\textsc{Day} } & \multicolumn{1}{l|}{7 p.m.} & \multicolumn{1}{l}{7 a.m.} \\
+\hline
+Monday ........ & \Large{\Sexpr{wday_hr("Monday", T)}} & \Large{\Sexpr{wday_hr("Monday", F)}} \\
+\cline{2-3}
+Tuesday ........ & \Large{\Sexpr{wday_hr("Tuesday", T)}} & \Large{\Sexpr{wday_hr("Tuesday", F)}} \\
+\cline{2-3}
+Wednesday ... & \Large{\Sexpr{wday_hr("Wednesday", T)}} & \Large{\Sexpr{wday_hr("Wednesday", F)}} \\
+\cline{2-3}
+Thursday ...... & \Large{\Sexpr{wday_hr("Thursday", T)}} & \Large{\Sexpr{wday_hr("Thursday", F)}} \\
+\cline{2-3}
+Friday .......... & \Large{\Sexpr{wday_hr("Friday", T)}} & \Large{\Sexpr{wday_hr("Friday", F)}} \\
+\cline{2-3}
+Saturday ..... & \Large{\Sexpr{wday_hr("Saturday", T)}} & \Large{\Sexpr{wday_hr("Saturday", F)}} \\
+\cline{2-3}
+Sunday ..... & \Large{\Sexpr{wday_hr("Sunday", T)}} & \Large{\Sexpr{wday_hr("Sunday", F)}} \\
+\hline
+\textsc{Total} ..... & \Large{\Sexpr{wday_hr("all", T)}} & \Large{\Sexpr{wday_hr("all", F)}} \\
+\hline
+\end{tabular}
+
+\end{tabular} % table to put table 3 & 4 in there
+
+\noindent \textit{Note.}--- \\
+~~~~~~~ The totals of paragraphs 2 and 3 should agree.
+
+% Table 5 ---------------------------------
+\begin{tabular}{ll}
+\hline
+\multicolumn{2}{l}{\textsc{5. Drivers of Other Persons Responsible---}}  \\
+~~~~~~~~~~ European \dotuline{~~~~~~~~\Large{\Sexpr{ntnlty("European")}}~~~~~~~~~~~~~~~~~~~~~} & 
+African \dotuline{~~~~~~~\Large{\Sexpr{ntnlty("African")}}~~~~~~~~~~~~~~~~~~~~~~~~~~~~}  \\
+~~~~~~~~~~ Asian \dotuline{~~~~~~~~~~~~~\Large{\Sexpr{ntnlty("Asian")}}~~~~~~~~~~~~~~~~~~~~~}  & 
+Others \dotuline{~~~~~~~~\Large{\Sexpr{ntnlty("Others")}}~~~~~~~~~~~~~~~~~~~~~~~~~~~~}  \\
+~~~~~~~~~~ Not known \dotuline{~~~~~~\Large{\Sexpr{ntnlty("Not known")}}~~~~~~~~~~~~~~~~~~~~~} & ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \\
+\end{tabular}
+
+
+
+
+\bigskip
+
+% Table 6 ---------------------------------
+\begin{tabular}{l  | M{2cm} | M{2cm} | l | M{2cm} | M{2cm}}
+\multicolumn{6}{l}{\textsc{6. Vehicles or Persons Involved---}} \\
+\hline
+& A & B & & A & B \\
+\cline{2-3}  \cline{5-6}
+Cars and Utilities .......... & \Large{~~~} & \Large{~~~} & 
+Hand Carts ............ & \Large{~~~} & \Large{~~~} \\
+\cline{2-3}  \cline{5-6}
+Lorries ........................... & \Large{~~~} & \Large{~~~} & 
+Pedal Cycles .......... & \Large{~~~} & \Large{~~~} \\
+\cline{2-3}  \cline{5-6}
+Tractors ........................ & \Large{~~~} & \Large{~~~} & 
+Animals ................. & \Large{~~~} & \Large{~~~} \\
+\cline{2-3}  \cline{5-6}
+Buses and Taxis ........... & \Large{~~~} & \Large{~~~} & 
+Persons .................. & \Large{~~~} & \Large{~~~} \\
+\cline{2-3}  \cline{5-6}
+Motor cycles ................. & \Large{~~~} & \Large{~~~} & 
+Not known ............. & \Large{~~~} & \Large{~~~} \\
+\hline
+\end{tabular}
+
+\bigskip
+
+\hangindent=3.5em
+\noindent \textit{Notes}---Under ``A'' give numbers of vehicles, etc., \textit{Primarily} responsible. Total of column A should agree with total in paragraphs 1, 4 and 5. \\
+~~~~~~~~~~~Under ``B'' give numbers of vehicles, etc., \textit{Otherwise} involved.
+
+\begin{tabular}{p{18.5cm}}
+\hline 
+~~
+\end{tabular} \\
+\textsc{\small 1. Details of all Fatal Accidents, Including A.R. No, Accident Cause Code No., Total Deaths and General Comments}
+
+\bigskip
+
+
+\begin{tabular}{ll}
+\textsc{8. Remarks} & 
+
+
+\begin{tabular}{ll}
+\underline{Summary} & \\
+Fatal Acc ~~ --- \Sexpr{print_worst_inj("Fatal")} & Victims --- \Sexpr{print_victim("Fatal")} \\
+Serious Acc --- \Sexpr{print_worst_inj("Serious")} & Victims --- \Sexpr{print_victim("Serious")} \\
+Slight Acc  ~ --- \Sexpr{print_worst_inj("Slight")} & Victims --- \Sexpr{print_victim("Slight")} \\
+Totals Acc ~ --- \Sexpr{print_worst_inj("all")} & Victims --- \Sexpr{print_victim("all")} \\
+\end{tabular}
+
+\\
+
+\end{tabular}
+
+
+
+\bigskip
+
+
+\flushright 
+\dotuline{~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~} \\
+\bigskip
+Date \dotuline{~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~}
+
+\flushleft
+\begin{tabular}{p{18.5cm}}
+\hline 
+~~
+\end{tabular} \\
+\textsc{To: ~~~~~ Commissioner of Police} \\
+\textsc{Through: Provincial Police Officer,}
+
+\bigskip
+
+~~~~~~~~~~~~~~~\dotuline{~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~} \\
+
+\bigskip
+\textit{Note.}---This Summary must reach Force Headquarters by the 10th of the month. \\
+\bigskip
+\footnotesize \textsc{GPK ~~~ (L)}
+
+
+% * ------------------------------- *
+% * ------------------------------- *
+%             PAGE 3
+% * ------------------------------- *
+% * ------------------------------- *
+\newpage
+
+\large
+
+
+
+
+
+\begin{tabular}{lll}
+\underline{\textsc{Vehicles or Persons Involved}} & & \\
+& \underline{A} & \underline{B} \\
+\rule{0pt}{4ex}    
+CARS AND UTILITIES & \Sexpr{prt_type("Saloon Car", prt_prim_df)} & \Sexpr{prt_type("Saloon Car", prt_df)} \\
+\rule{0pt}{4ex}    
+LORRIES ~~~~~~~~~~~~~~~~~~~~~ -LORRIES & \Sexpr{prt_type("Lorry", prt_prim_df)} & \Sexpr{prt_type("Lorry", prt_df)} \\
+\rule{0pt}{4ex}    
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -TANKERS & \Sexpr{prt_type("tanker", prt_prim_df)} & \Sexpr{prt_type("tanker", prt_df)} \\
+\rule{0pt}{4ex}    
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -TRAILERS & \Sexpr{prt_type("Lorry + trailer", prt_prim_df)} & \Sexpr{prt_type("Lorry + trailer", prt_df)} \\
+\rule{0pt}{4ex}    
+TRACTORS & \Sexpr{prt_type("tractors", prt_prim_df)} & \Sexpr{prt_type("tractors", prt_df)} \\ % TODO: NOT ASKED IN P41
+\rule{0pt}{4ex}    
+%BUSES ~~~~~ -COUNTRY BUSES & \Sexpr{prt_type("country bus", prt_prim_df)} & \Sexpr{prt_type("country bus", prt_df)} \\
+%\rule{0pt}{4ex}    
+%~~~~~~~~~~~~~~~~ -URBAN BUSES & \Sexpr{prt_type("other urban bus", prt_prim_df)} & \Sexpr{prt_type("other urban bus", prt_df)} \\
+BUSES & \Sexpr{prt_type("Bus", prt_prim_df)} & \Sexpr{prt_type("Bus", prt_df)} \\
+\rule{0pt}{4ex}    
+%SCHOOL/ COLLEGE BUSES & \Sexpr{prt_type("institutional bus", prt_prim_df)} & \Sexpr{prt_type("institutional bus", prt_df)} \\ %
+%\rule{0pt}{4ex}    
+MATATUS & \Sexpr{prt_type("Matatu", prt_prim_df)} & \Sexpr{prt_type("Matatu", prt_df)} \\
+\rule{0pt}{4ex}    
+TAXIS & \Sexpr{prt_type("taxcab", prt_prim_df)} & \Sexpr{prt_type("taxcab", prt_df)} \\
+\rule{0pt}{4ex}    
+MOTOR CYCLES & \Sexpr{prt_type("Motor-cycle", prt_prim_df)} & \Sexpr{prt_type("Motor-cycle", prt_df)} \\
+\rule{0pt}{4ex}    
+PEDAL CYCLES & \Sexpr{prt_type("Bicycle", prt_prim_df)} & \Sexpr{prt_type("Bicycle", prt_df)} \\
+\rule{0pt}{4ex}    
+PERSONS & \Sexpr{prt_type("Pedestrian", prt_prim_df)} & \Sexpr{prt_type("Pedestrian", prt_df)} \\
+\rule{0pt}{4ex}    
+NOT KNOWN & \Sexpr{prt_type("Not Known", prt_prim_df)} & \Sexpr{prt_type("Not Known", prt_df)} \\
+& & \\
+& & \\
+TOTALS & \Sexpr{prt_type("all", prt_prim_df)} & \Sexpr{prt_type("all", prt_df)} \\
+\hline
+\end{tabular}
+
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+
+\Sexpr{toupper(p69_officer_name)} \\
+\underline{FOR: OC TRAFFIC NAIROBI AREA:}
+
+% * ------------------------------- *
+% * ------------------------------- *
+%             PAGE 4 - End
+% * ------------------------------- *
+% * ------------------------------- *
+\newpage
+
+{\bf \normalsize DETAILS OF ALL FATAL ACCIDENTS INCLUDING IAR NO. C/CODE NO. AND NO. OF VICTIMS}
+
+\bigskip
+\bigskip
+\bigskip
+
+\begin{tabular}{lccc}
+
+%\ul{DIVISION/SECTION} & \ul{IAR NO.} & \ul{C/CODE NO.} & \ul{NO. OF VICTIMS} \\[5mm]
+\underline{DIVISION/SECTION} & \underline{IAR NO.} & \underline{C/CODE NO.} & \underline{NO. OF VICTIMS} \\[5mm]
+
+<<include=TRUE, results='asis', echo=FALSE, warning=FALSE, message=FALSE>>=
+
+data_temp <<- data_temp
+participant_df <<- participant_df
+
+## Restrict to Crashes with Fatal Injury
+prtc_fat_df <- participant_df %>%
+  group_by(uid) %>%
+  mutate(fatality = "Fatal" %in% injurytype) %>%
+  ungroup() %>%
+  filter(fatality %in% T)
+
+## Check nrow=0
+if(nrow(prtc_fat_df) > 0){
+  
+  ## Merge in data frame main data
+  prtc_fat_df <- prtc_fat_df %>%
+  left_join(data_temp %>% 
+              dplyr::select(uid, police_division, iar_no, cause_code_value), 
+            by = "uid")
+  
+  ## Collapse
+  prtc_fat_df <- prtc_fat_df %>%
+    group_by(uid) %>%
+    summarise(division = police_division[1],
+              iar_no = iar_no[1],
+              cause_code_value = cause_code_value[1],
+              no_victims = n()) %>% # assuming number of "fatal" victims (that's how code is written)
+    
+    ## Add variable for number of crashes in division
+    group_by(division) %>%
+    mutate(n_crash_division = n()) %>%
+    ungroup() %>%
+    arrange(division, iar_no) %>%
+    
+    # Counter - needs to come after arrange()
+    group_by(division) %>%
+    mutate(n_crash_division_id = 1:n()) %>%
+    ungroup() %>%
+    
+    ## tex variable
+    mutate(tex_division = paste0(division, 
+                                 " (", n_crash_division,") ")) 
+  
+  prtc_fat_df$tex_division[prtc_fat_df$n_crash_division_id > 1] <- ""
+  
+  # TODO: Not set up to go to multiple pages
+  for(i in 1:nrow(prtc_fat_df)){
+    prtc_fat_df_i <- prtc_fat_df[i,]
+    
+    cat(prtc_fat_df_i$tex_division, " & ")
+    cat(prtc_fat_df_i$iar_no, " & ")
+    cat(prtc_fat_df_i$cause_code_value, " & ")
+    cat(prtc_fat_df_i$no_victims, " \\\\[2mm] ")
+    
+  }
+  
+}
+
+@
+
+% TODO What is the number in TOTAL row under cause code column?
+TOTAL & &  & \Sexpr{nrow(prtc_fat_df)} \\
+\hline
+\end{tabular}
+
+
+\bigskip
+\bigskip
+\bigskip
+
+
+(\underline{~\Sexpr{toupper(p69_officer_name)}~}) \\
+\bigskip
+\underline{FOR: OC TRAFFIC NAIROBI AREA:}
+
+
+\end{document}

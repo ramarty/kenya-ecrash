@@ -1,0 +1,78 @@
+\documentclass{article}
+\usepackage[top=0.5in, bottom=.5in, left=.1in, right=.1in, landscape]{geometry}
+\usepackage{graphicx}
+\usepackage{tabularx}
+%\usepackage{xltabular}
+%\usepackage{ltablex} % NEW
+%\usepackage{longtable}
+%\usepackage{tabu}
+
+\newcolumntype{t}{>{\hsize=.2\hsize}X}
+\newcolumntype{s}{>{\hsize=.5\hsize}X}
+\newcolumntype{m}{>{\hsize=.7\hsize}X}
+
+
+\begin{document}
+\pagestyle{empty}
+
+\noindent {\large ACCIDENTS: \Sexpr{input$table_cntrl_dates[1] %>% as.Date() %>% format('%d/%m/%Y')} to \Sexpr{input$table_cntrl_dates[2] %>% as.Date() %>% format('%d/%m/%Y')}}
+
+
+\small
+
+<<include=TRUE, results='asis', echo=F, message=FALSE, message=FALSE>>=
+
+#TODO: Multiple pages
+# tlmgr_install('ltablex.sty')
+
+# https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell/176780#:~:text=You%20can%20switch%20your%20cell,%5Cnewline%20bar%20%5C%5C%20...&text=Use%20the%20tabularx%20environment%20instead,line%20breaks%20within%20a%20cell.
+
+df_clean <- df_table %>%
+  mutate_at(vars(`CLASS OF VICTIM`, DATE, TIME, CODE, ROAD),  . %>% 
+              str_squish() %>%
+              str_replace_all("(<br>)+", "<br>") %>% # remove repeating (eg, <br><br>)
+              str_replace_all("^<br>", "") %>% # remove if at start of line
+              str_replace_all("<br>", " \\\\newline ")) %>%
+  mutate(STATION_clean = case_when(`TYPE OF ACCIDENT` %in% c("SERIOUS", "SLIGHT") ~ "",
+                                   TRUE ~ STATION)) %>%
+  mutate_all(. %>% as.character()) %>%
+  mutate_all(. %>% replace_na(., "")) %>%
+  dplyr::mutate(latex = paste(" {\\bf ", STATION_clean, "} & ",
+                              `TYPE OF ACCIDENT`, " & ",
+                              `NO. OF ACCIDENTS`, " & ",
+                              `NO. OF VICTIMS`, " & ",
+                              `CLASS OF VICTIM`, " & ",
+                              DATE, " & ",
+                              TIME, " & ",
+                              CODE, " & ",
+                              ROAD, " \\\\ "))
+
+#sink("~/Desktop/test123.tex")
+
+cat("\\begin{tabularx}{\\columnwidth}{|l|l|l|l|m|s|s|t|X|} \n") 
+#cat("\\begin{xltabular}{\\columnwidth}{|l|l|l|l|X|X|X|X|X|} \n") 
+cat(" \\hline \n")
+cat("{\\bf STATION} & {\\bf TYPE OF}  & {\\bf NO. OF}    & {\\bf NO. OF}  & {\\bf CLASS OF} & {\\bf DATE} & {\\bf TIME} & {\\bf CODE} & {\\bf ROAD} \\\\ \n")
+cat("        & {\\bf ACCIDENT} & {\\bf ACCIDENTS} & {\\bf VICTIMS} & {\\bf VICTIM}   &      &      &      &      \\\\ \n")
+cat(" \\hline \n")
+
+for(station_i in unique(df_clean$STATION)){
+  df_clean_s <- df_clean[df_clean$STATION %in% station_i,]
+  
+  cat(df_clean_s$latex[1], "\n")
+  cat(" \\cline{2-9} \n")
+  cat(df_clean_s$latex[2], "\n")
+  cat(" \\cline{2-9} \n")
+  cat(df_clean_s$latex[3], "\n")
+  cat(" \\hline \n")
+  
+}
+
+cat(" \\end{tabularx} ")
+
+#sink()
+
+@
+
+
+\end{document}

@@ -1,0 +1,57 @@
+\documentclass[8pt, oneside]{article}   	
+\usepackage[top=.1in, bottom=.1in, left=-.25in, right=.1in]{geometry} 		
+\geometry{letterpaper}                   		
+
+
+% data_i <- data.frame(temp="")
+\usepackage{graphicx}												
+\usepackage{amssymb}
+\usepackage{array,multirow,graphicx}
+\usepackage{float}
+\usepackage{rotating}
+\usepackage{adjustbox}
+\usepackage[normalem]{ulem} % [normalem] prevents the package from changing the default behavior of `\emph` to underline.
+%\usepackage{pgffor}
+
+\usepackage{atbegshi}% http://ctan.org/pkg/atbegshi
+\AtBeginDocument{\AtBeginShipoutNext{\AtBeginShipoutDiscard}}
+
+\begin{document}
+
+\ttfamily
+
+
+<<run-all, include=FALSE, echo=F>>=
+#dataset <- readRDS("/Users/robmarty/Documents/Github/Kenya-Police-Dashboard/data/police_data_test.Rds")
+
+## Initalize Out
+out = NULL
+
+## Load function to prep data
+
+## Restrict to finalized
+data_temp <- data_temp[data_temp$report_type %in% "p41",]
+data_temp <- data_temp[data_temp$stage_p41 %in% "finalized",]
+
+N_REPORTS <- nrow(data_temp)
+
+for(n_report_i in 1:N_REPORTS){
+   
+   data_i <- data_temp[n_report_i,]
+   data_i <<- data_i
+   
+   ## Implement Function 
+   p41_data <- prep_data_for_p41(data_i)
+   data_i <- p41_data$data_i
+   prtcpnt_df <- p41_data$prtcpnt_df
+   victim_df <- p41_data$victim_df
+   
+   out = c(out, knit_child('generate_p41_pdf_child.Rnw'))
+   
+}
+
+@
+
+\Sexpr{paste(out, collapse = '\n')}
+
+\end{document}

@@ -1,0 +1,56 @@
+\documentclass[8pt, oneside]{article}   	
+\usepackage[top=.1in, bottom=.1in, left=-.25in, right=.1in]{geometry} 		
+\geometry{letterpaper}                   		
+
+
+% data_i <- data.frame(temp="")
+\usepackage{graphicx}												
+\usepackage{amssymb}
+\usepackage{array,multirow,graphicx}
+\usepackage{float}
+\usepackage{rotating}
+\usepackage{adjustbox}
+\usepackage[normalem]{ulem} % [normalem] prevents the package from changing the default behavior of `\emph` to underline.
+%\usepackage{pgffor}
+
+\usepackage{atbegshi}% http://ctan.org/pkg/atbegshi
+\AtBeginDocument{\AtBeginShipoutNext{\AtBeginShipoutDiscard}}
+
+\begin{document}
+
+\ttfamily
+
+<<run-all, include=FALSE, echo=F>>=
+
+# Initialize out
+out = NULL
+
+## Grab P41
+# In some cases, the SR will be loaded. Use the uid to grab the p41
+if(!(data_i$report_type %in% "p41")){
+  if(TESTING_SYSTEM){
+    dataset <- readRDS(file.path("..", "data", "police_data_test.Rds"))
+  } else{
+    dataset <- unserialize(aes_cbc_decrypt(readRDS(file.path("..", "data", "police_data.Rds")), key = data_key))
+  }
+  
+  dataset <- as.data.frame(dataset)
+  
+  data_i <- dataset[(dataset$uid %in% data_i$uid) & (dataset$report_type %in% "p41"),]
+}
+
+## Implement Function 
+#
+
+p41_data <- prep_data_for_p41(data_i)
+data_i <- p41_data$data_i
+prtcpnt_df <- p41_data$prtcpnt_df
+victim_df <- p41_data$victim_df
+
+out = c(out, knit_child(file.path('generate_p41_pdf_child.Rnw')))
+
+@
+
+\Sexpr{paste(out, collapse = '\n')}
+
+\end{document}

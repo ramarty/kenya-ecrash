@@ -1,0 +1,31 @@
+
+\noindent \\
+\begin{tabular}{@{}lcr} % @{} makes tabular not indented
+\Sexpr{fu_df$fu_row1_c1} & ~~~~~~~~~~~~~~~~~~~~~~~ \Sexpr{fu_df$fu_row1_c2} & ~~~~~~~~~~~~~~~~~~ \Sexpr{fu_df$fu_row1_c3} ~ \\
+\end{tabular}
+\\
+\\
+\Sexpr{fu_df$fu_row2}  \\
+\\
+\Sexpr{fu_df$fu_row3} \\
+\\
+\Sexpr{fu_df$fu_row4} \\
+\\
+\Sexpr{fu_df$fu_row5}  \\
+\\
+\begin{tabularx}{\textwidth}{@{}lXr} % @{} makes tabular not indented
+\Sexpr{fu_df$fu_row6_c1} & ~~~~~~~~~~~~~~ \Sexpr{fu_df$fu_row6_c2} & \Sexpr{fu_df$fu_row6_c3} ~~~~~~~~~~ \\
+\end{tabularx}
+\\
+\\
+\Sexpr{fu_df$fu_main_text} \\
+\\
+\Sexpr{fu_df$fu_row7} \\
+\\
+\Sexpr{fu_df$fu_row8} \\
+\\
+\Sexpr{fu_df$fu_row9}  \\
+\\
+\Sexpr{fu_df$fu_row10}  \\
+
+\newpage

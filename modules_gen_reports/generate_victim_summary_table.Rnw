@@ -1,0 +1,48 @@
+\documentclass{article}
+\usepackage[top=1in, bottom=1in, left=1in, right=1in, landscape]{geometry}
+\usepackage{graphicx}
+
+
+\begin{document}
+\pagestyle{empty}
+
+\centering 
+
+\large 
+ACCIDENT VICTIMS \\
+\Sexpr{input$table_cntrl_dates[1] %>% as.Date() %>% format('%d/%m/%Y')} to \Sexpr{input$table_cntrl_dates[2] %>% as.Date() %>% format('%d/%m/%Y')}
+
+\bigskip
+\bigskip
+
+\normalsize
+
+<<include=TRUE, results='asis', echo=F>>=
+
+cat(" \\begin{tabular}{l | cccc | cccc} \n")
+cat(" \\hline \n")
+cat(" Station & \\multicolumn{4}{c|}{Crashes}      & \\multicolumn{4}{c}{Victims} \\\\ \n")
+cat("        & Total & Slight & Serious & Fatal  & Total & Slight & Serious & Fatal \\\\ \n")
+cat(" \\hline \n")
+data_station_sum <- data_station_sum %>%
+  mutate(latex = paste(Station, " & ",
+                       `Total Crashes`, " & ",
+                       `Slight Crashes`, " & ",
+                       `Serious Crashes`, " & ",
+                       `Fatal Crashes`, " & ",
+                       `Total Victims`, " & ",
+                       `Slight Victims`, " & ",
+                       `Serious Victims`, " & ",
+                       `Fatal Victims`, " \\\\ \n"))
+
+for(i in 1:nrow(data_station_sum)){
+  cat(data_station_sum$latex[i])
+}
+cat(" \\hline \n")
+cat(" \\end{tabular} ")
+
+@
+
+\end{document}
+
+
